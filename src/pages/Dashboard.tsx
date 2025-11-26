@@ -55,14 +55,16 @@ const Dashboard = () => {
 
       <div className="p-6 space-y-6 -mt-6">
         {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-2 gap-4 animate-fade-in">
+        <div className="grid grid-cols-2 gap-4">
           {stats.map((stat, index) => (
             <Card 
               key={index}
-              className="p-4 gradient-card border-0 shadow-md hover:shadow-lg transition-smooth"
+              className="p-4 gradient-card border-0 shadow-md card-interactive hover-glow opacity-0-animate animate-slide-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <stat.icon className={`h-8 w-8 ${stat.color} mb-2`} />
+              <div className="icon-bounce">
+                <stat.icon className={`h-8 w-8 ${stat.color} mb-2 transition-transform duration-300`} />
+              </div>
               <p className="text-2xl font-bold text-foreground mb-1">{stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
             </Card>
@@ -70,9 +72,9 @@ const Dashboard = () => {
         </div>
 
         {/* Botão de Ponto */}
-        <Card className="p-6 gradient-card border-0 shadow-lg animate-slide-up">
+        <Card className="p-6 gradient-card border-0 shadow-lg opacity-0-animate animate-slide-up delay-300 card-interactive">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center animate-pulse-soft">
               <Clock className="h-6 w-6 text-gold" />
             </div>
             <div>
@@ -86,7 +88,7 @@ const Dashboard = () => {
           {pontoStatus && (
             <Button 
               onClick={() => navigate("/ponto")}
-              className="w-full h-12 bg-gold hover:bg-gold/90 text-gold-foreground font-semibold rounded-xl shadow-gold transition-smooth"
+              className="w-full h-12 bg-gold hover:bg-gold/90 text-gold-foreground font-semibold rounded-xl shadow-gold hover-lift press-effect animate-glow"
             >
               Marcar {pontoStatus === "entrada" ? "Entrada" : "Saída"}
             </Button>
@@ -94,47 +96,47 @@ const Dashboard = () => {
         </Card>
 
         {/* Progresso das Metas */}
-        <Card className="p-6 gradient-card border-0 shadow-md animate-slide-up" style={{ animationDelay: "0.2s" }}>
+        <Card className="p-6 gradient-card border-0 shadow-md opacity-0-animate animate-slide-up delay-400 card-interactive">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center icon-bounce">
               <Target className="h-5 w-5 text-primary" />
             </div>
             <h3 className="font-semibold text-foreground">Metas do Mês</h3>
           </div>
 
           <div className="space-y-4">
-            <div>
+            <div className="opacity-0-animate animate-slide-left delay-500">
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-muted-foreground">Reuniões</span>
                 <span className="font-medium text-foreground">12/20</span>
               </div>
-              <Progress value={60} className="h-2" />
+              <Progress value={60} className="h-2 progress-animated" />
             </div>
 
-            <div>
+            <div className="opacity-0-animate animate-slide-left" style={{ animationDelay: '0.6s' }}>
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-muted-foreground">Vendas</span>
                 <span className="font-medium text-foreground">5/8</span>
               </div>
-              <Progress value={62.5} className="h-2" />
+              <Progress value={62.5} className="h-2 progress-animated" />
             </div>
 
-            <div>
+            <div className="opacity-0-animate animate-slide-left" style={{ animationDelay: '0.7s' }}>
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-muted-foreground">Pontuação</span>
                 <span className="font-medium text-foreground">2.450/4.000</span>
               </div>
-              <Progress value={61.25} className="h-2" />
+              <Progress value={61.25} className="h-2 progress-animated" />
             </div>
           </div>
         </Card>
 
         {/* Próximas Atividades */}
-        <Card className="p-6 gradient-card border-0 shadow-md animate-slide-up" style={{ animationDelay: "0.3s" }}>
+        <Card className="p-6 gradient-card border-0 shadow-md opacity-0-animate animate-slide-up" style={{ animationDelay: '0.5s' }}>
           <h3 className="font-semibold text-foreground mb-4">Próximas Atividades</h3>
           <div className="space-y-3">
-            <div className="flex gap-3 p-3 bg-muted/30 rounded-xl">
-              <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="flex gap-3 p-3 bg-muted/30 rounded-xl hover-lift cursor-pointer opacity-0-animate animate-slide-right" style={{ animationDelay: '0.6s' }}>
+              <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center flex-shrink-0 animate-float">
                 <Calendar className="h-5 w-5 text-gold" />
               </div>
               <div>
@@ -143,8 +145,8 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="flex gap-3 p-3 bg-muted/30 rounded-xl">
-              <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="flex gap-3 p-3 bg-muted/30 rounded-xl hover-lift cursor-pointer opacity-0-animate animate-slide-right" style={{ animationDelay: '0.7s' }}>
+              <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0 animate-float" style={{ animationDelay: '0.5s' }}>
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
               <div>
