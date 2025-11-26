@@ -14,16 +14,334 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      atividades: {
+        Row: {
+          cliente_contato: string | null
+          cliente_nome: string | null
+          created_at: string | null
+          data_hora: string
+          descricao: string | null
+          id: string
+          pontos_ganhos: number | null
+          status: string | null
+          tipo: string
+          titulo: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cliente_contato?: string | null
+          cliente_nome?: string | null
+          created_at?: string | null
+          data_hora: string
+          descricao?: string | null
+          id?: string
+          pontos_ganhos?: number | null
+          status?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cliente_contato?: string | null
+          cliente_nome?: string | null
+          created_at?: string | null
+          data_hora?: string
+          descricao?: string | null
+          id?: string
+          pontos_ganhos?: number | null
+          status?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      conquistas: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          icone: string | null
+          id: string
+          pontos_recompensa: number | null
+          requisito_tipo: string | null
+          requisito_valor: number | null
+          titulo: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          pontos_recompensa?: number | null
+          requisito_tipo?: string | null
+          requisito_valor?: number | null
+          titulo: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          pontos_recompensa?: number | null
+          requisito_tipo?: string | null
+          requisito_valor?: number | null
+          titulo?: string
+        }
+        Relationships: []
+      }
+      metas: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          periodo: string
+          pontos_recompensa: number
+          tipo: string
+          titulo: string
+          valor_objetivo: number
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          periodo?: string
+          pontos_recompensa: number
+          tipo: string
+          titulo: string
+          valor_objetivo: number
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          periodo?: string
+          pontos_recompensa?: number
+          tipo?: string
+          titulo?: string
+          valor_objetivo?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          foto: string | null
+          id: string
+          nome: string
+          pontos_totais: number | null
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          foto?: string | null
+          id: string
+          nome: string
+          pontos_totais?: number | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          foto?: string | null
+          id?: string
+          nome?: string
+          pontos_totais?: number | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      progresso_metas: {
+        Row: {
+          completada: boolean | null
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string
+          id: string
+          meta_id: string
+          updated_at: string | null
+          user_id: string
+          valor_atual: number | null
+        }
+        Insert: {
+          completada?: boolean | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          meta_id: string
+          updated_at?: string | null
+          user_id: string
+          valor_atual?: number | null
+        }
+        Update: {
+          completada?: boolean | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          meta_id?: string
+          updated_at?: string | null
+          user_id?: string
+          valor_atual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progresso_metas_meta_id_fkey"
+            columns: ["meta_id"]
+            isOneToOne: false
+            referencedRelation: "metas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_ponto: {
+        Row: {
+          created_at: string | null
+          entrada: string
+          id: string
+          localizacao_entrada: string | null
+          localizacao_saida: string | null
+          saida: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          entrada: string
+          id?: string
+          localizacao_entrada?: string | null
+          localizacao_saida?: string | null
+          saida?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          entrada?: string
+          id?: string
+          localizacao_entrada?: string | null
+          localizacao_saida?: string | null
+          saida?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_conquistas: {
+        Row: {
+          conquista_id: string
+          desbloqueada_em: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          conquista_id: string
+          desbloqueada_em?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          conquista_id?: string
+          desbloqueada_em?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_conquistas_conquista_id_fkey"
+            columns: ["conquista_id"]
+            isOneToOne: false
+            referencedRelation: "conquistas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendas: {
+        Row: {
+          cliente_nome: string | null
+          comissao: number | null
+          created_at: string | null
+          data_venda: string
+          id: string
+          imovel_nome: string
+          pontos_ganhos: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          cliente_nome?: string | null
+          comissao?: number | null
+          created_at?: string | null
+          data_venda?: string
+          id?: string
+          imovel_nome: string
+          pontos_ganhos?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          valor: number
+        }
+        Update: {
+          cliente_nome?: string | null
+          comissao?: number | null
+          created_at?: string | null
+          data_venda?: string
+          id?: string
+          imovel_nome?: string
+          pontos_ganhos?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "corretor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +468,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "corretor"],
+    },
   },
 } as const
