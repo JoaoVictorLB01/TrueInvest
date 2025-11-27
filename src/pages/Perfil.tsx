@@ -5,40 +5,82 @@ import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Mail, Award, TrendingUp, Calendar, Clock } from "lucide-react";
+import { LogOut, Mail, Award, TrendingUp, Calendar, Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
-interface Corretor {
+interface Profile {
   id: string;
   nome: string;
   email: string;
-  foto: string;
+  foto: string | null;
+  pontos_totais: number;
 }
 
 const Perfil = () => {
   const navigate = useNavigate();
-  const [corretor, setCorretor] = useState<Corretor | null>(null);
+  const { user, loading: authLoading, signOut } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [ranking, setRanking] = useState<number | null>(null);
 
   useEffect(() => {
-    const corretorData = localStorage.getItem("corretor");
-    if (!corretorData) {
+    if (!authLoading && !user) {
       navigate("/login");
       return;
     }
-    setCorretor(JSON.parse(corretorData));
-  }, [navigate]);
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, authLoading, navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("corretor");
+  const fetchProfile = async () => {
+    if (!user) return;
+
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileData) {
+      setProfile(profileData);
+    }
+
+    // Calculate ranking
+    const { data: allProfiles } = await supabase
+      .from('profiles')
+      .select('id, pontos_totais')
+      .order('pontos_totais', { ascending: false });
+
+    if (allProfiles) {
+      const userRanking = allProfiles.findIndex(p => p.id === user.id) + 1;
+      setRanking(userRanking > 0 ? userRanking : null);
+    }
+
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
     toast.success("Logout realizado com sucesso!");
     navigate("/login");
   };
 
-  if (!corretor) return null;
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-gold" />
+      </div>
+    );
+  }
+
+  if (!profile) return null;
 
   const estatisticas = [
-    { label: "Pontos Totais", value: "2.450", icon: Award, color: "text-gold" },
-    { label: "Posição Ranking", value: "3º", icon: TrendingUp, color: "text-gold" },
+    { label: "Pontos Totais", value: profile.pontos_totais.toLocaleString(), icon: Award, color: "text-gold" },
+    { label: "Posição Ranking", value: ranking ? `${ranking}º` : "-", icon: TrendingUp, color: "text-gold" },
     { label: "Reuniões Mês", value: "12", icon: Calendar, color: "text-primary" },
     { label: "Dias Ativos", value: "87", icon: Clock, color: "text-success" },
   ];
@@ -55,20 +97,22 @@ const Perfil = () => {
         <Card className="p-6 gradient-card border-0 shadow-lg animate-fade-in">
           <div className="flex flex-col items-center text-center">
             <Avatar className="h-24 w-24 mb-4 border-4 border-gold shadow-gold">
-              <AvatarImage src={corretor.foto} />
-              <AvatarFallback className="text-2xl">{corretor.nome[0]}</AvatarFallback>
+              <AvatarImage src={profile.foto || undefined} />
+              <AvatarFallback className="text-2xl">{profile.nome[0]}</AvatarFallback>
             </Avatar>
             
-            <h2 className="text-2xl font-bold text-foreground mb-1">{corretor.nome}</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-1">{profile.nome}</h2>
             
             <div className="flex items-center gap-2 text-muted-foreground mb-4">
               <Mail className="h-4 w-4" />
-              <span className="text-sm">{corretor.email}</span>
+              <span className="text-sm">{profile.email}</span>
             </div>
 
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gold/10 rounded-full">
               <Award className="h-4 w-4 text-gold" />
-              <span className="text-sm font-semibold text-gold">Nível Avançado</span>
+              <span className="text-sm font-semibold text-gold">
+                {profile.pontos_totais < 1000 ? 'Nível Iniciante' : profile.pontos_totais < 3000 ? 'Nível Avançado' : 'Nível Expert'}
+              </span>
             </div>
           </div>
         </Card>

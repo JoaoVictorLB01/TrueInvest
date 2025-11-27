@@ -1,11 +1,23 @@
-import { Bell } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  showLogout?: boolean;
 }
 
-const Header = ({ title, subtitle }: HeaderProps) => {
+const Header = ({ title, subtitle, showLogout = false }: HeaderProps) => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    toast.success("Logout realizado com sucesso!");
+    navigate("/login");
+  };
   return (
     <header className="bg-gradient-primary text-white p-6 pb-8 rounded-b-[2rem] animate-slide-down">
       <div className="flex justify-between items-start mb-6 opacity-0-animate animate-fade-in">
@@ -15,10 +27,21 @@ const Header = ({ title, subtitle }: HeaderProps) => {
           </div>
           <span className="text-lg font-bold animate-slide-right delay-100">True Invest</span>
         </div>
-        <button className="relative p-2 hover:bg-white/10 rounded-xl transition-all duration-300 hover:scale-110 press-effect group">
-          <Bell className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-gold rounded-full animate-pulse-soft"></span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="relative p-2 hover:bg-white/10 rounded-xl transition-all duration-300 hover:scale-110 press-effect group">
+            <Bell className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-gold rounded-full animate-pulse-soft"></span>
+          </button>
+          {showLogout && (
+            <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-destructive/10 rounded-xl transition-all duration-300 hover:scale-110 press-effect group"
+              title="Sair"
+            >
+              <LogOut className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" />
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="opacity-0-animate animate-slide-up delay-200">
