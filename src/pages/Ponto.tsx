@@ -136,6 +136,7 @@ const Ponto = () => {
       <Header 
         title="Registro de Ponto"
         subtitle="Marque sua entrada e saída"
+        showLogout
       />
 
       <div className="p-6 space-y-6 -mt-6">

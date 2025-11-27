@@ -97,6 +97,7 @@ const Dashboard = () => {
       <Header 
         title={`Olá, ${profile.nome.split(' ')[0]}!`}
         subtitle="Seja bem-vindo de volta"
+        showLogout
       />
 
       <div className="p-6 space-y-6 -mt-6">

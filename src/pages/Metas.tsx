@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Target, Calendar, TrendingUp, Award, CheckCircle2, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -62,6 +64,7 @@ const Metas = () => {
   const [userConquistas, setUserConquistas] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<number | null>(null);
+  const [completingMeta, setCompletingMeta] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -132,6 +135,40 @@ const Metas = () => {
     setLoading(false);
   };
 
+  const handleCompleteMeta = async (meta: Meta) => {
+    if (!user) return;
+    
+    setCompletingMeta(meta.id);
+
+    try {
+      // Add points to user's profile
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('pontos_totais')
+        .eq('id', user.id)
+        .single();
+
+      if (currentProfile) {
+        const newPoints = (currentProfile.pontos_totais || 0) + meta.pontos_recompensa;
+        
+        await supabase
+          .from('profiles')
+          .update({ pontos_totais: newPoints })
+          .eq('id', user.id);
+
+        toast.success(`Meta concluída! +${meta.pontos_recompensa} pontos`);
+        
+        // Refresh data
+        await fetchData();
+      }
+    } catch (error) {
+      toast.error("Erro ao completar meta");
+      console.error(error);
+    } finally {
+      setCompletingMeta(null);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -145,6 +182,7 @@ const Metas = () => {
       <Header 
         title="Metas"
         subtitle="Acompanhe seu progresso"
+        showLogout
       />
 
       <div className="p-6 space-y-6 -mt-6">
@@ -219,6 +257,25 @@ const Metas = () => {
                       <p className="text-xs text-muted-foreground">
                         {meta.valor_objetivo} faltando para completar
                       </p>
+
+                      <Button
+                        onClick={() => handleCompleteMeta(meta)}
+                        disabled={completingMeta === meta.id}
+                        className="w-full mt-3 bg-gold hover:bg-gold/90 text-gold-foreground"
+                        size="sm"
+                      >
+                        {completingMeta === meta.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Concluindo...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Concluir Meta
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </Card>

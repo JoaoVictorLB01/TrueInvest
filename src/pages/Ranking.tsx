@@ -127,6 +127,7 @@ const Ranking = () => {
       <Header 
         title="Ranking"
         subtitle="Veja sua posição e os líderes"
+        showLogout
       />
 
       <div className="p-6 space-y-6 -mt-6">
