@@ -27,6 +27,14 @@ interface Meta {
   periodo: string;
 }
 
+interface ProgressoMeta {
+  id: string;
+  meta_id: string;
+  user_id: string;
+  completada: boolean;
+  data_inicio: string;
+}
+
 interface Conquista {
   id: string;
   titulo: string;
@@ -62,6 +70,7 @@ const Metas = () => {
   const [metas, setMetas] = useState<Meta[]>([]);
   const [conquistas, setConquistas] = useState<Conquista[]>([]);
   const [userConquistas, setUserConquistas] = useState<string[]>([]);
+  const [metasCompletadas, setMetasCompletadas] = useState<Record<string, ProgressoMeta>>({});
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<number | null>(null);
   const [completingMeta, setCompletingMeta] = useState<string | null>(null);
@@ -121,6 +130,21 @@ const Metas = () => {
       setUserConquistas(userConquistasData.map(uc => uc.conquista_id));
     }
 
+    // Fetch metas completadas pelo usuário
+    const { data: progressoData } = await supabase
+      .from('progresso_metas')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('completada', true);
+
+    if (progressoData) {
+      const progressoMap: Record<string, ProgressoMeta> = {};
+      progressoData.forEach(p => {
+        progressoMap[p.meta_id] = p;
+      });
+      setMetasCompletadas(progressoMap);
+    }
+
     // Calculate ranking
     const { data: allProfiles } = await supabase
       .from('profiles')
@@ -135,13 +159,14 @@ const Metas = () => {
     setLoading(false);
   };
 
-  const handleCompleteMeta = async (meta: Meta) => {
+  const handleToggleMeta = async (meta: Meta) => {
     if (!user) return;
     
     setCompletingMeta(meta.id);
+    const isCompletada = !!metasCompletadas[meta.id];
 
     try {
-      // Add points to user's profile
+      // Get current profile points
       const { data: currentProfile } = await supabase
         .from('profiles')
         .select('pontos_totais')
@@ -149,20 +174,50 @@ const Metas = () => {
         .single();
 
       if (currentProfile) {
-        const newPoints = (currentProfile.pontos_totais || 0) + meta.pontos_recompensa;
-        
-        await supabase
-          .from('profiles')
-          .update({ pontos_totais: newPoints })
-          .eq('id', user.id);
+        if (isCompletada) {
+          // Desmarcar meta - remover pontos
+          const newPoints = Math.max(0, (currentProfile.pontos_totais || 0) - meta.pontos_recompensa);
+          
+          await supabase
+            .from('profiles')
+            .update({ pontos_totais: newPoints })
+            .eq('id', user.id);
 
-        toast.success(`Meta concluída! +${meta.pontos_recompensa} pontos`);
+          // Deletar registro de progresso
+          await supabase
+            .from('progresso_metas')
+            .delete()
+            .eq('id', metasCompletadas[meta.id].id);
+
+          toast.success(`Meta desmarcada! -${meta.pontos_recompensa} pontos`);
+        } else {
+          // Marcar meta - adicionar pontos
+          const newPoints = (currentProfile.pontos_totais || 0) + meta.pontos_recompensa;
+          
+          await supabase
+            .from('profiles')
+            .update({ pontos_totais: newPoints })
+            .eq('id', user.id);
+
+          // Criar registro de progresso
+          await supabase
+            .from('progresso_metas')
+            .insert({
+              user_id: user.id,
+              meta_id: meta.id,
+              completada: true,
+              valor_atual: meta.valor_objetivo,
+              data_inicio: new Date().toISOString().split('T')[0]
+            });
+
+          toast.success(`Meta concluída! +${meta.pontos_recompensa} pontos`);
+        }
         
         // Refresh data
         await fetchData();
       }
     } catch (error) {
-      toast.error("Erro ao completar meta");
+      toast.error("Erro ao atualizar meta");
       console.error(error);
     } finally {
       setCompletingMeta(null);
@@ -221,13 +276,15 @@ const Metas = () => {
             {metas.map((meta, index) => {
               const Icon = getIconByType(meta.tipo);
               const colors = getColorByType(meta.tipo);
-              // For now, show 0 progress since we need to implement progress tracking
-              const progresso = 0;
+              const isCompletada = !!metasCompletadas[meta.id];
+              const progresso = isCompletada ? 100 : 0;
               
               return (
                 <Card 
                   key={meta.id}
-                  className="p-5 gradient-card border-0 shadow-md card-interactive opacity-0-animate animate-slide-up"
+                  className={`p-5 border-0 shadow-md card-interactive opacity-0-animate animate-slide-up ${
+                    isCompletada ? "gradient-gold" : "gradient-card"
+                  }`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start gap-4">
@@ -248,26 +305,44 @@ const Metas = () => {
 
                       <div className="mb-2">
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-muted-foreground">0 de {meta.valor_objetivo}</span>
-                          <span className="font-medium text-foreground">{progresso}%</span>
+                          <span className={isCompletada ? "text-gold-foreground/80" : "text-muted-foreground"}>
+                            {isCompletada ? meta.valor_objetivo : 0} de {meta.valor_objetivo}
+                          </span>
+                          <span className={`font-medium ${isCompletada ? "text-gold-foreground" : "text-foreground"}`}>
+                            {progresso}%
+                          </span>
                         </div>
                         <Progress value={progresso} className="h-2" />
                       </div>
 
-                      <p className="text-xs text-muted-foreground">
-                        {meta.valor_objetivo} faltando para completar
-                      </p>
+                      {isCompletada && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle2 className="h-4 w-4 text-gold-foreground" />
+                          <p className="text-xs text-gold-foreground font-medium">
+                            Meta concluída!
+                          </p>
+                        </div>
+                      )}
 
                       <Button
-                        onClick={() => handleCompleteMeta(meta)}
+                        onClick={() => handleToggleMeta(meta)}
                         disabled={completingMeta === meta.id}
-                        className="w-full mt-3 bg-gold hover:bg-gold/90 text-gold-foreground"
+                        className={`w-full mt-3 ${
+                          isCompletada 
+                            ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground" 
+                            : "bg-gold hover:bg-gold/90 text-gold-foreground"
+                        }`}
                         size="sm"
                       >
                         {completingMeta === meta.id ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Concluindo...
+                            Processando...
+                          </>
+                        ) : isCompletada ? (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Desmarcar Meta
                           </>
                         ) : (
                           <>
