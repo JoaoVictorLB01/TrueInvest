@@ -15,6 +15,7 @@ interface PontoRegistro {
   saida: string | null;
   localizacao_entrada: string | null;
   localizacao_saida: string | null;
+  created_at?: string;
 }
 
 const Ponto = () => {
@@ -22,6 +23,7 @@ const Ponto = () => {
   const { user, loading: authLoading } = useAuth();
   const [pontoStatus, setPontoStatus] = useState<"entrada" | "saida" | null>(null);
   const [pontoAtual, setPontoAtual] = useState<PontoRegistro | null>(null);
+  const [historicoMes, setHistoricoMes] = useState<PontoRegistro[]>([]);
   const [horarioAtual, setHorarioAtual] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [marcando, setMarcando] = useState(false);
@@ -39,6 +41,7 @@ const Ponto = () => {
 
     if (user) {
       checkPontoHoje();
+      fetchHistoricoMes();
     }
 
     return () => clearInterval(interval);
@@ -68,6 +71,28 @@ const Ponto = () => {
     setLoading(false);
   };
 
+  const fetchHistoricoMes = async () => {
+    if (!user) return;
+
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+
+    const { data, error } = await supabase
+      .from('registros_ponto')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('entrada', firstDayOfMonth.toISOString())
+      .lte('entrada', lastDayOfMonth.toISOString())
+      .order('entrada', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching historico:', error);
+    } else if (data) {
+      setHistoricoMes(data);
+    }
+  };
+
   const marcarPonto = async () => {
     if (!user || marcando) return;
     
@@ -91,6 +116,7 @@ const Ponto = () => {
         setPontoAtual(data);
         setPontoStatus("saida");
         toast.success("Entrada registrada com sucesso!");
+        await fetchHistoricoMes();
       } else if (pontoStatus === "saida" && pontoAtual) {
         const { data, error } = await supabase
           .from('registros_ponto')
@@ -107,6 +133,7 @@ const Ponto = () => {
         setPontoAtual(data);
         setPontoStatus(null);
         toast.success("Saída registrada com sucesso!");
+        await fetchHistoricoMes();
       }
     } catch (error) {
       console.error('Error marking ponto:', error);
@@ -120,6 +147,14 @@ const Ponto = () => {
     return new Date(isoString).toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit"
+    });
+  };
+
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      weekday: "short"
     });
   };
 
@@ -226,8 +261,67 @@ const Ponto = () => {
           </Card>
         )}
 
+        {/* Histórico do Mês */}
+        {historicoMes.length > 0 && (
+          <Card className="p-6 gradient-card border-0 shadow-md opacity-0-animate animate-slide-up delay-300">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-gold" />
+              Histórico do Mês
+            </h3>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {historicoMes.map((registro, index) => (
+                <div 
+                  key={registro.id}
+                  className="p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-smooth opacity-0-animate animate-fade-in"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {formatDate(registro.entrada)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(registro.entrada).toLocaleDateString("pt-BR", { 
+                        day: "2-digit", 
+                        month: "2-digit" 
+                      })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-success"></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Entrada</p>
+                        <p className="text-sm font-semibold text-foreground">{formatTime(registro.entrada)}</p>
+                      </div>
+                    </div>
+                    
+                    {registro.saida ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-destructive"></div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Saída</p>
+                          <p className="text-sm font-semibold text-foreground">{formatTime(registro.saida)}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 opacity-50">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Saída</p>
+                          <p className="text-sm text-muted-foreground">Não registrada</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* Informações */}
-        <Card className="p-6 gradient-card border-0 shadow-md opacity-0-animate animate-slide-up delay-300">
+        <Card className="p-6 gradient-card border-0 shadow-md opacity-0-animate animate-slide-up delay-400">
           <h3 className="font-semibold text-foreground mb-3">Informações</h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex gap-2">
