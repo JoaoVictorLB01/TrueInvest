@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, UserPlus, Mail, Lock, User, ArrowLeft, Loader2 } from "lucide-react";
+import { LogIn, UserPlus, Mail, Lock, User, ArrowLeft, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
@@ -287,6 +287,16 @@ const Login = () => {
               >
                 <UserPlus className="mr-2 h-5 w-5" />
                 Criar nova conta
+              </Button>
+
+              <Button 
+                type="button"
+                variant="ghost"
+                onClick={() => navigate("/admin")}
+                className="w-full h-10 rounded-xl text-sm transition-smooth hover:bg-gold/10 opacity-0-animate animate-fade-in delay-500"
+                disabled={loading}
+              >
+                Acesso Admin
               </Button>
             </form>
           )}
