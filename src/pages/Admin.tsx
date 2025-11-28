@@ -7,8 +7,16 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, Trash2, Users, LogOut, Search } from "lucide-react";
+import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit } from "lucide-react";
 import Header from "@/components/Header";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface UserProfile {
   id: string;
@@ -26,6 +34,12 @@ const Admin = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editTelefone, setEditTelefone] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     checkAdminStatus();
@@ -128,6 +142,47 @@ const Admin = () => {
     }
   };
 
+  const openEditDialog = (u: UserProfile) => {
+    setEditingUser(u);
+    setEditNome(u.nome);
+    setEditEmail(u.email);
+    setEditTelefone(u.telefone || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+
+    if (!editNome.trim() || !editEmail.trim()) {
+      toast.error("Nome e email são obrigatórios");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          nome: editNome.trim(),
+          email: editEmail.trim(),
+          telefone: editTelefone.trim() || null,
+        })
+        .eq('id', editingUser.id);
+
+      if (error) throw error;
+
+      toast.success(`Dados de ${editNome} atualizados com sucesso!`);
+      setEditDialogOpen(false);
+      await fetchUsers();
+    } catch (error) {
+      toast.error("Erro ao atualizar usuário");
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const filteredUsers = users.filter(u => 
     u.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -207,7 +262,16 @@ const Admin = () => {
                   </p>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => openEditDialog(u)}
+                    className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+
                   <Button
                     variant="outline"
                     onClick={() => handleResetUser(u.id, u.nome)}
@@ -243,6 +307,77 @@ const Admin = () => {
             </Card>
           )}
         </div>
+
+        {/* Dialog de Edição */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="bg-card border-white/10">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Editar Usuário</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Altere os dados do usuário abaixo.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nome" className="text-foreground">Nome</Label>
+                <Input
+                  id="edit-nome"
+                  value={editNome}
+                  onChange={(e) => setEditNome(e.target.value)}
+                  placeholder="Nome completo"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-email" className="text-foreground">E-mail</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-telefone" className="text-foreground">Telefone (Opcional)</Label>
+                <Input
+                  id="edit-telefone"
+                  type="tel"
+                  value={editTelefone}
+                  onChange={(e) => setEditTelefone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                className="flex-1 h-11 rounded-xl"
+                disabled={saving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveEdit}
+                className="flex-1 h-11 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                disabled={saving}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Salvar"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
