@@ -342,7 +342,7 @@ const Metas = () => {
                         ) : isCompletada ? (
                           <>
                             <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Desmarcar Meta
+                            Desfazer Meta
                           </>
                         ) : (
                           <>
