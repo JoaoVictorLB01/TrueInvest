@@ -5,7 +5,10 @@ import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Mail, Award, TrendingUp, Calendar, Clock, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LogOut, Mail, Award, TrendingUp, Calendar, Clock, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +27,11 @@ const Perfil = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<number | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -66,6 +74,71 @@ const Perfil = () => {
     await signOut();
     toast.success("Logout realizado com sucesso!");
     navigate("/login");
+  };
+
+  const openEditDialog = () => {
+    if (profile) {
+      setEditNome(profile.nome);
+      setEditEmail(profile.email);
+      setPhotoFile(null);
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPhotoFile(e.target.files[0]);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!user || !profile) return;
+
+    setUploading(true);
+    try {
+      let photoUrl = profile.foto;
+
+      // Upload photo if selected
+      if (photoFile) {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, photoFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+        photoUrl = publicUrl;
+      }
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          nome: editNome,
+          email: editEmail,
+          foto: photoUrl,
+        })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Refresh profile data
+      await fetchProfile();
+      
+      toast.success("Perfil atualizado com sucesso!");
+      setIsEditDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error(error.message || "Erro ao atualizar perfil");
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -161,7 +234,10 @@ const Perfil = () => {
         <Card className="p-4 gradient-card border-0 shadow-md animate-slide-up" style={{ animationDelay: "0.5s" }}>
           <h3 className="font-semibold text-foreground mb-3 px-2">Configurações</h3>
           <div className="space-y-2">
-            <button className="w-full text-left px-3 py-3 hover:bg-muted/30 rounded-xl transition-smooth text-sm text-foreground">
+            <button 
+              onClick={openEditDialog}
+              className="w-full text-left px-3 py-3 hover:bg-muted/30 rounded-xl transition-smooth text-sm text-foreground"
+            >
               Editar Perfil
             </button>
             <button className="w-full text-left px-3 py-3 hover:bg-muted/30 rounded-xl transition-smooth text-sm text-foreground">
@@ -189,6 +265,78 @@ const Perfil = () => {
       </div>
 
       <BottomNav />
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Perfil</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-nome">Nome</Label>
+              <Input
+                id="edit-nome"
+                value={editNome}
+                onChange={(e) => setEditNome(e.target.value)}
+                placeholder="Seu nome"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="seu@email.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-photo">Foto de Perfil</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="edit-photo"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handlePhotoChange}
+                  className="flex-1"
+                />
+                <Upload className="h-5 w-5 text-muted-foreground" />
+              </div>
+              {photoFile && (
+                <p className="text-xs text-muted-foreground">
+                  Arquivo selecionado: {photoFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              className="flex-1"
+              disabled={uploading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              className="flex-1"
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
