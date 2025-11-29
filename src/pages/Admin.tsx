@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus } from "lucide-react";
+import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog } from "lucide-react";
 import Header from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +27,7 @@ interface UserProfile {
   email: string;
   pontos_totais: number;
   telefone?: string;
+  is_admin?: boolean;
 }
 
 interface Meta {
@@ -96,17 +97,30 @@ const Admin = () => {
   };
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase
+    const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('id, nome, email, pontos_totais, telefone')
       .order('nome');
 
-    if (error) {
+    if (profilesError) {
       toast.error("Erro ao carregar usuários");
       return;
     }
 
-    setUsers(data || []);
+    // Verificar quais usuários são admins
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('user_id, role')
+      .eq('role', 'admin');
+
+    const adminIds = new Set(rolesData?.map(r => r.user_id) || []);
+
+    const usersWithRoles = (profilesData || []).map(user => ({
+      ...user,
+      is_admin: adminIds.has(user.id)
+    }));
+
+    setUsers(usersWithRoles);
   };
 
   const fetchMetas = async () => {
@@ -226,6 +240,46 @@ const Admin = () => {
       await fetchMetas();
     } catch (error) {
       toast.error("Erro ao deletar meta");
+      console.error(error);
+    }
+  };
+
+  const handleToggleAdmin = async (userId: string, userName: string, currentIsAdmin: boolean) => {
+    // Impedir que o admin remova seu próprio acesso
+    if (currentIsAdmin && userId === user?.id) {
+      toast.error("Você não pode remover seu próprio acesso de administrador");
+      return;
+    }
+
+    const action = currentIsAdmin ? "remover" : "conceder";
+    if (!confirm(`Tem certeza que deseja ${action} acesso de administrador ${currentIsAdmin ? 'de' : 'para'} ${userName}?`)) {
+      return;
+    }
+
+    try {
+      if (currentIsAdmin) {
+        // Remover role de admin
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId)
+          .eq('role', 'admin');
+
+        if (error) throw error;
+        toast.success(`Acesso de administrador removido de ${userName}`);
+      } else {
+        // Adicionar role de admin
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: userId, role: 'admin' });
+
+        if (error) throw error;
+        toast.success(`Acesso de administrador concedido para ${userName}`);
+      }
+
+      await fetchUsers();
+    } catch (error) {
+      toast.error("Erro ao atualizar permissões");
       console.error(error);
     }
   };
@@ -436,7 +490,15 @@ const Admin = () => {
             <Card key={u.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground">{u.nome}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-lg font-semibold text-foreground">{u.nome}</h3>
+                    {u.is_admin && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-gold/20 text-gold flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        Admin
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">{u.email}</p>
                   {u.telefone && (
                     <p className="text-sm text-muted-foreground">{u.telefone}</p>
@@ -447,6 +509,15 @@ const Admin = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleToggleAdmin(u.id, u.nome, u.is_admin || false)}
+                    className={`h-10 rounded-xl ${u.is_admin ? 'border-orange-500/30 hover:bg-orange-500/10' : 'border-green-500/30 hover:bg-green-500/10'}`}
+                  >
+                    <UserCog className="h-4 w-4 mr-2" />
+                    {u.is_admin ? 'Remover Admin' : 'Tornar Admin'}
+                  </Button>
+
                   <Button
                     variant="outline"
                     onClick={() => openEditDialog(u)}
