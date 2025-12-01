@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog } from "lucide-react";
+import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog, Video, Link, Calendar, X } from "lucide-react";
 import Header from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +18,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface UserProfile {
@@ -39,6 +38,17 @@ interface Meta {
   pontos_recompensa: number;
   periodo: string;
   ativo: boolean | null;
+  created_at: string | null;
+}
+
+interface Reuniao {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  link: string | null;
+  data_hora: string;
+  status: string | null;
+  created_by: string;
   created_at: string | null;
 }
 
@@ -70,6 +80,17 @@ const Admin = () => {
   const [metaAtivo, setMetaAtivo] = useState(true);
   const [savingMeta, setSavingMeta] = useState(false);
 
+  // Estados para Reuniões
+  const [reunioes, setReunioes] = useState<Reuniao[]>([]);
+  const [reuniaoDialogOpen, setReuniaoDialogOpen] = useState(false);
+  const [editingReuniao, setEditingReuniao] = useState<Reuniao | null>(null);
+  const [reuniaoTitulo, setReuniaoTitulo] = useState("");
+  const [reuniaoDescricao, setReuniaoDescricao] = useState("");
+  const [reuniaoLink, setReuniaoLink] = useState("");
+  const [reuniaoData, setReuniaoData] = useState("");
+  const [reuniaoHora, setReuniaoHora] = useState("");
+  const [savingReuniao, setSavingReuniao] = useState(false);
+
   useEffect(() => {
     checkAdminStatus();
   }, [user]);
@@ -93,6 +114,7 @@ const Admin = () => {
     setIsAdmin(true);
     await fetchUsers();
     await fetchMetas();
+    await fetchReunioes();
     setLoading(false);
   };
 
@@ -137,6 +159,20 @@ const Admin = () => {
     setMetas(data || []);
   };
 
+  const fetchReunioes = async () => {
+    const { data, error } = await supabase
+      .from('reunioes')
+      .select('*')
+      .order('data_hora', { ascending: true });
+
+    if (error) {
+      toast.error("Erro ao carregar reuniões");
+      return;
+    }
+
+    setReunioes(data || []);
+  };
+
   const openMetaDialog = (meta?: Meta) => {
     if (meta) {
       setEditingMeta(meta);
@@ -158,6 +194,26 @@ const Admin = () => {
       setMetaAtivo(true);
     }
     setMetaDialogOpen(true);
+  };
+
+  const openReuniaoDialog = (reuniao?: Reuniao) => {
+    if (reuniao) {
+      setEditingReuniao(reuniao);
+      setReuniaoTitulo(reuniao.titulo);
+      setReuniaoDescricao(reuniao.descricao || "");
+      setReuniaoLink(reuniao.link || "");
+      const dataHora = new Date(reuniao.data_hora);
+      setReuniaoData(dataHora.toISOString().split('T')[0]);
+      setReuniaoHora(dataHora.toTimeString().slice(0, 5));
+    } else {
+      setEditingReuniao(null);
+      setReuniaoTitulo("");
+      setReuniaoDescricao("");
+      setReuniaoLink("");
+      setReuniaoData("");
+      setReuniaoHora("");
+    }
+    setReuniaoDialogOpen(true);
   };
 
   const handleSaveMeta = async () => {
@@ -219,6 +275,80 @@ const Admin = () => {
     }
   };
 
+  const handleSaveReuniao = async () => {
+    if (!reuniaoTitulo.trim()) {
+      toast.error("Título é obrigatório");
+      return;
+    }
+
+    if (!reuniaoData || !reuniaoHora) {
+      toast.error("Data e hora são obrigatórios");
+      return;
+    }
+
+    setSavingReuniao(true);
+
+    try {
+      const dataHora = new Date(`${reuniaoData}T${reuniaoHora}:00`).toISOString();
+
+      const reuniaoData_obj = {
+        titulo: reuniaoTitulo.trim(),
+        descricao: reuniaoDescricao.trim() || null,
+        link: reuniaoLink.trim() || null,
+        data_hora: dataHora,
+        status: 'agendada',
+        created_by: user!.id,
+      };
+
+      if (editingReuniao) {
+        const { error } = await supabase
+          .from('reunioes')
+          .update(reuniaoData_obj)
+          .eq('id', editingReuniao.id);
+
+        if (error) throw error;
+        toast.success("Reunião atualizada com sucesso!");
+      } else {
+        // Criar reunião
+        const { data: newReuniao, error } = await supabase
+          .from('reunioes')
+          .insert(reuniaoData_obj)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Enviar notificação para todos os usuários
+        const allUsers = await supabase
+          .from('profiles')
+          .select('id');
+
+        if (allUsers.data && allUsers.data.length > 0) {
+          const notificacoes = allUsers.data.map(u => ({
+            user_id: u.id,
+            tipo: 'reuniao',
+            titulo: `Nova Reunião: ${reuniaoTitulo.trim()}`,
+            mensagem: `Uma nova reunião foi agendada para ${new Date(dataHora).toLocaleDateString('pt-BR')} às ${reuniaoHora}`,
+            referencia_id: newReuniao.id,
+            lida: false,
+          }));
+
+          await supabase.from('notificacoes').insert(notificacoes);
+        }
+
+        toast.success("Reunião criada e notificações enviadas!");
+      }
+
+      setReuniaoDialogOpen(false);
+      await fetchReunioes();
+    } catch (error) {
+      toast.error("Erro ao salvar reunião");
+      console.error(error);
+    } finally {
+      setSavingReuniao(false);
+    }
+  };
+
   const handleDeleteMeta = async (metaId: string, metaTitulo: string) => {
     if (!confirm(`Tem certeza que deseja deletar a meta "${metaTitulo}"?`)) {
       return;
@@ -240,6 +370,69 @@ const Admin = () => {
       await fetchMetas();
     } catch (error) {
       toast.error("Erro ao deletar meta");
+      console.error(error);
+    }
+  };
+
+  const handleCancelReuniao = async (reuniaoId: string, reuniaoTitulo: string) => {
+    if (!confirm(`Tem certeza que deseja cancelar a reunião "${reuniaoTitulo}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('reunioes')
+        .update({ status: 'cancelada' })
+        .eq('id', reuniaoId);
+
+      if (error) throw error;
+
+      // Notificar todos os usuários sobre o cancelamento
+      const allUsers = await supabase
+        .from('profiles')
+        .select('id');
+
+      if (allUsers.data && allUsers.data.length > 0) {
+        const notificacoes = allUsers.data.map(u => ({
+          user_id: u.id,
+          tipo: 'reuniao_cancelada',
+          titulo: `Reunião Cancelada: ${reuniaoTitulo}`,
+          mensagem: `A reunião "${reuniaoTitulo}" foi cancelada.`,
+          referencia_id: reuniaoId,
+          lida: false,
+        }));
+
+        await supabase.from('notificacoes').insert(notificacoes);
+      }
+
+      toast.success("Reunião cancelada com sucesso!");
+      await fetchReunioes();
+    } catch (error) {
+      toast.error("Erro ao cancelar reunião");
+      console.error(error);
+    }
+  };
+
+  const handleDeleteReuniao = async (reuniaoId: string, reuniaoTitulo: string) => {
+    if (!confirm(`Tem certeza que deseja DELETAR a reunião "${reuniaoTitulo}"? Esta ação é irreversível.`)) {
+      return;
+    }
+
+    try {
+      // Deletar notificações relacionadas
+      await supabase.from('notificacoes').delete().eq('referencia_id', reuniaoId);
+
+      const { error } = await supabase
+        .from('reunioes')
+        .delete()
+        .eq('id', reuniaoId);
+
+      if (error) throw error;
+
+      toast.success("Reunião deletada com sucesso!");
+      await fetchReunioes();
+    } catch (error) {
+      toast.error("Erro ao deletar reunião");
       console.error(error);
     }
   };
@@ -336,6 +529,7 @@ const Admin = () => {
       await supabase.from('atividades').delete().eq('user_id', userId);
       await supabase.from('vendas').delete().eq('user_id', userId);
       await supabase.from('user_roles').delete().eq('user_id', userId);
+      await supabase.from('notificacoes').delete().eq('user_id', userId);
       await supabase.from('profiles').delete().eq('id', userId);
 
       toast.success(`Usuário ${userName} deletado com sucesso!`);
@@ -392,6 +586,14 @@ const Admin = () => {
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('pt-BR'),
+      time: date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-primary">
@@ -429,7 +631,7 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="users" className="rounded-xl">
                 <Users className="h-4 w-4 mr-2" />
                 Usuários
@@ -437,6 +639,10 @@ const Admin = () => {
               <TabsTrigger value="metas" className="rounded-xl">
                 <Target className="h-4 w-4 mr-2" />
                 Metas
+              </TabsTrigger>
+              <TabsTrigger value="reunioes" className="rounded-xl">
+                <Video className="h-4 w-4 mr-2" />
+                Reuniões
               </TabsTrigger>
             </TabsList>
 
@@ -478,6 +684,23 @@ const Admin = () => {
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Meta
+                </Button>
+              </div>
+            </TabsContent>
+
+            {/* Tab de Reuniões */}
+            <TabsContent value="reunioes" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Video className="h-4 w-4" />
+                  {reunioes.length} reunião(ões) cadastrada(s)
+                </p>
+                <Button
+                  onClick={() => openReuniaoDialog()}
+                  className="h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Reunião
                 </Button>
               </div>
             </TabsContent>
@@ -634,7 +857,103 @@ const Admin = () => {
           )}
         </div>
 
-        {/* Dialog de Edição */}
+        {/* Lista de Reuniões */}
+        <div className="space-y-4">
+          {reunioes.map((reuniao) => {
+            const { date, time } = formatDateTime(reuniao.data_hora);
+            const isPast = new Date(reuniao.data_hora) < new Date();
+            const isCanceled = reuniao.status === 'cancelada';
+
+            return (
+              <Card key={reuniao.id} className={`p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up ${isCanceled ? 'opacity-60' : ''}`}>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Video className="h-5 w-5 text-gold" />
+                      <h3 className="text-lg font-semibold text-foreground">{reuniao.titulo}</h3>
+                      {isCanceled ? (
+                        <span className="text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400">Cancelada</span>
+                      ) : isPast ? (
+                        <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Encerrada</span>
+                      ) : (
+                        <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">Agendada</span>
+                      )}
+                    </div>
+                    {reuniao.descricao && (
+                      <p className="text-sm text-muted-foreground mb-2">{reuniao.descricao}</p>
+                    )}
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <p className="text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {date} às {time}
+                      </p>
+                      {reuniao.link && (
+                        <a 
+                          href={reuniao.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-gold hover:underline flex items-center gap-1"
+                        >
+                          <Link className="h-4 w-4" />
+                          Acessar reunião
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {!isCanceled && !isPast && (
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={() => openReuniaoDialog(reuniao)}
+                          className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => handleCancelReuniao(reuniao.id, reuniao.titulo)}
+                          className="h-10 rounded-xl border-orange-500/30 hover:bg-orange-500/10"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Cancelar
+                        </Button>
+                      </>
+                    )}
+
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleDeleteReuniao(reuniao.id, reuniao.titulo)}
+                      className="h-10 rounded-xl"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Deletar
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+
+          {reunioes.length === 0 && (
+            <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+              <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">Nenhuma reunião cadastrada</p>
+              <Button
+                onClick={() => openReuniaoDialog()}
+                className="mt-4 h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agendar Primeira Reunião
+              </Button>
+            </Card>
+          )}
+        </div>
+
+        {/* Dialog de Edição de Usuário */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="bg-card border-white/10">
             <DialogHeader>
@@ -829,6 +1148,101 @@ const Admin = () => {
                 disabled={savingMeta}
               >
                 {savingMeta ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Salvar"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de Reuniões */}
+        <Dialog open={reuniaoDialogOpen} onOpenChange={setReuniaoDialogOpen}>
+          <DialogContent className="bg-card border-white/10 max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">
+                {editingReuniao ? "Editar Reunião" : "Nova Reunião"}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                {editingReuniao ? "Altere os dados da reunião abaixo." : "Preencha os dados para agendar uma nova reunião. Todos os corretores serão notificados."}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="reuniao-titulo" className="text-foreground">Título/Tema *</Label>
+                <Input
+                  id="reuniao-titulo"
+                  value={reuniaoTitulo}
+                  onChange={(e) => setReuniaoTitulo(e.target.value)}
+                  placeholder="Ex: Reunião de Alinhamento Semanal"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reuniao-descricao" className="text-foreground">Descrição</Label>
+                <Textarea
+                  id="reuniao-descricao"
+                  value={reuniaoDescricao}
+                  onChange={(e) => setReuniaoDescricao(e.target.value)}
+                  placeholder="Descrição detalhada da reunião (opcional)"
+                  className="rounded-xl min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reuniao-link" className="text-foreground">Link da Reunião</Label>
+                <Input
+                  id="reuniao-link"
+                  value={reuniaoLink}
+                  onChange={(e) => setReuniaoLink(e.target.value)}
+                  placeholder="Ex: https://meet.google.com/xxx-xxxx-xxx"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reuniao-data" className="text-foreground">Data *</Label>
+                  <Input
+                    id="reuniao-data"
+                    type="date"
+                    value={reuniaoData}
+                    onChange={(e) => setReuniaoData(e.target.value)}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reuniao-hora" className="text-foreground">Hora *</Label>
+                  <Input
+                    id="reuniao-hora"
+                    type="time"
+                    value={reuniaoHora}
+                    onChange={(e) => setReuniaoHora(e.target.value)}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setReuniaoDialogOpen(false)}
+                className="flex-1 h-11 rounded-xl"
+                disabled={savingReuniao}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveReuniao}
+                className="flex-1 h-11 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                disabled={savingReuniao}
+              >
+                {savingReuniao ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "Salvar"
