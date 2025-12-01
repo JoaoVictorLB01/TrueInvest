@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, Target, Calendar, Award, Clock, CheckCircle2, Loader2 } from "lucide-react";
+import { TrendingUp, Target, Calendar, Award, Clock, CheckCircle2, Loader2, Video, Link, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,12 +17,33 @@ interface Profile {
   pontos_totais: number;
 }
 
+interface Reuniao {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  link: string | null;
+  data_hora: string;
+  status: string | null;
+}
+
+interface Atividade {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  data_hora: string;
+  tipo: string;
+  status: string | null;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pontoStatus, setPontoStatus] = useState<"entrada" | "saida" | null>(null);
   const [loading, setLoading] = useState(true);
+  const [proximasReunioes, setProximasReunioes] = useState<Reuniao[]>([]);
+  const [proximasAtividades, setProximasAtividades] = useState<Atividade[]>([]);
+  const [notificacoesCount, setNotificacoesCount] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -33,6 +54,9 @@ const Dashboard = () => {
     if (user) {
       fetchProfile();
       checkPontoStatus();
+      fetchProximasReunioes();
+      fetchProximasAtividades();
+      fetchNotificacoesCount();
     }
   }, [user, authLoading, navigate]);
 
@@ -75,6 +99,68 @@ const Dashboard = () => {
     }
   };
 
+  const fetchProximasReunioes = async () => {
+    const now = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('reunioes')
+      .select('*')
+      .eq('status', 'agendada')
+      .gte('data_hora', now)
+      .order('data_hora', { ascending: true })
+      .limit(5);
+
+    if (error) {
+      console.error('Error fetching reunioes:', error);
+    } else {
+      setProximasReunioes(data || []);
+    }
+  };
+
+  const fetchProximasAtividades = async () => {
+    if (!user) return;
+    
+    const now = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('atividades')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'agendada')
+      .gte('data_hora', now)
+      .order('data_hora', { ascending: true })
+      .limit(5);
+
+    if (error) {
+      console.error('Error fetching atividades:', error);
+    } else {
+      setProximasAtividades(data || []);
+    }
+  };
+
+  const fetchNotificacoesCount = async () => {
+    if (!user) return;
+    
+    const { count, error } = await supabase
+      .from('notificacoes')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('lida', false);
+
+    if (!error && count !== null) {
+      setNotificacoesCount(count);
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      time: date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      weekday: date.toLocaleDateString('pt-BR', { weekday: 'short' })
+    };
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -88,9 +174,14 @@ const Dashboard = () => {
   const stats = [
     { label: "Pontos", value: profile.pontos_totais.toLocaleString(), icon: Award, color: "text-gold" },
     { label: "Posição", value: "—", icon: TrendingUp, color: "text-gold" },
-    { label: "Reuniões", value: "0", icon: Calendar, color: "text-primary" },
+    { label: "Reuniões", value: String(proximasReunioes.length), icon: Calendar, color: "text-primary" },
     { label: "Vendas", value: "0", icon: CheckCircle2, color: "text-success" },
   ];
+
+  const todasAtividades = [
+    ...proximasReunioes.map(r => ({ ...r, tipoItem: 'reuniao' as const })),
+    ...proximasAtividades.map(a => ({ ...a, tipoItem: 'atividade' as const }))
+  ].sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime()).slice(0, 5);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -101,6 +192,24 @@ const Dashboard = () => {
       />
 
       <div className="p-6 space-y-6 -mt-6">
+        {/* Notificações Badge */}
+        {notificacoesCount > 0 && (
+          <Card 
+            onClick={() => navigate('/perfil')}
+            className="p-4 gradient-card border-0 shadow-md cursor-pointer hover:bg-gold/5 transition-colors animate-fade-in"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center">
+                <Bell className="h-5 w-5 text-gold" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-foreground">Você tem {notificacoesCount} notificação(ões) nova(s)</p>
+                <p className="text-xs text-muted-foreground">Toque para ver</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-2 gap-4">
           {stats.map((stat, index) => (
@@ -181,10 +290,57 @@ const Dashboard = () => {
         {/* Próximas Atividades */}
         <Card className="p-6 gradient-card border-0 shadow-md opacity-0-animate animate-slide-up" style={{ animationDelay: '0.5s' }}>
           <h3 className="font-semibold text-foreground mb-4">Próximas Atividades</h3>
-          <div className="text-center py-6 text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Nenhuma atividade agendada</p>
-          </div>
+          
+          {todasAtividades.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nenhuma atividade agendada</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {todasAtividades.map((item) => {
+                const { date, time, weekday } = formatDateTime(item.data_hora);
+                const isReuniao = item.tipoItem === 'reuniao';
+                
+                return (
+                  <div 
+                    key={item.id} 
+                    className="flex items-start gap-3 p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isReuniao ? 'bg-gold/20' : 'bg-primary/20'}`}>
+                      {isReuniao ? (
+                        <Video className="h-5 w-5 text-gold" />
+                      ) : (
+                        <Calendar className="h-5 w-5 text-primary" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-foreground truncate">{item.titulo}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {weekday}, {date} às {time}
+                      </p>
+                      {isReuniao && (item as Reuniao).link && (
+                        <a 
+                          href={(item as Reuniao).link!} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-gold hover:underline flex items-center gap-1 mt-1"
+                        >
+                          <Link className="h-3 w-3" />
+                          Acessar reunião
+                        </a>
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className={`text-xs px-2 py-1 rounded-full ${isReuniao ? 'bg-gold/20 text-gold' : 'bg-primary/20 text-primary'}`}>
+                        {isReuniao ? 'Reunião' : 'Atividade'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       </div>
 
