@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut, Mail, Award, TrendingUp, Calendar, Clock, Loader2, Upload } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogOut, Mail, Award, TrendingUp, Calendar, Clock, Loader2, Upload, Bell, Check, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,16 @@ interface Profile {
   email: string;
   foto: string | null;
   pontos_totais: number;
+}
+
+interface Notificacao {
+  id: string;
+  tipo: string;
+  titulo: string;
+  mensagem: string | null;
+  referencia_id: string | null;
+  lida: boolean;
+  created_at: string;
 }
 
 const Perfil = () => {
@@ -32,6 +43,10 @@ const Perfil = () => {
   const [editEmail, setEditEmail] = useState("");
   const [uploading, setUploading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  
+  // Notificações
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [loadingNotificacoes, setLoadingNotificacoes] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -40,6 +55,7 @@ const Perfil = () => {
     }
     if (user) {
       fetchProfile();
+      fetchNotificacoes();
     }
   }, [user, authLoading, navigate]);
 
@@ -68,6 +84,39 @@ const Perfil = () => {
     }
 
     setLoading(false);
+  };
+
+  const fetchNotificacoes = async () => {
+    if (!user) return;
+    
+    setLoadingNotificacoes(true);
+    const { data, error } = await supabase
+      .from('notificacoes')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao carregar notificações:', error);
+    } else {
+      setNotificacoes(data || []);
+    }
+    setLoadingNotificacoes(false);
+  };
+
+  const handleMarcarLida = async (notificacaoId: string) => {
+    const { error } = await supabase
+      .from('notificacoes')
+      .update({ lida: true })
+      .eq('id', notificacaoId);
+
+    if (error) {
+      toast.error("Erro ao marcar notificação como lida");
+    } else {
+      setNotificacoes(prev => 
+        prev.map(n => n.id === notificacaoId ? { ...n, lida: true } : n)
+      );
+    }
   };
 
   const handleLogout = async () => {
@@ -141,6 +190,20 @@ const Perfil = () => {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const notificacoesNaoLidas = notificacoes.filter(n => !n.lida);
+  const historicoNotificacoes = notificacoes.filter(n => n.lida);
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -208,8 +271,101 @@ const Perfil = () => {
           </div>
         </div>
 
-        {/* Conquistas Recentes */}
+        {/* Notificações */}
         <Card className="p-6 gradient-card border-0 shadow-md animate-slide-up" style={{ animationDelay: "0.4s" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notificações
+              {notificacoesNaoLidas.length > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gold/20 text-gold">
+                  {notificacoesNaoLidas.length} nova(s)
+                </span>
+              )}
+            </h3>
+          </div>
+
+          <Tabs defaultValue="novas" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="novas" className="rounded-xl text-sm">
+                Novas ({notificacoesNaoLidas.length})
+              </TabsTrigger>
+              <TabsTrigger value="historico" className="rounded-xl text-sm">
+                Histórico ({historicoNotificacoes.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="novas" className="space-y-3">
+              {loadingNotificacoes ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-gold" />
+                </div>
+              ) : notificacoesNaoLidas.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma notificação nova
+                </p>
+              ) : (
+                notificacoesNaoLidas.map((notif) => (
+                  <div key={notif.id} className="p-3 bg-gold/10 rounded-xl border border-gold/20">
+                    <div className="flex items-start gap-3">
+                      {notif.tipo === 'reuniao' || notif.tipo === 'reuniao_cancelada' ? (
+                        <Video className={`h-5 w-5 mt-0.5 ${notif.tipo === 'reuniao_cancelada' ? 'text-red-400' : 'text-gold'}`} />
+                      ) : (
+                        <Bell className="h-5 w-5 text-gold mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium text-sm text-foreground">{notif.titulo}</p>
+                        {notif.mensagem && (
+                          <p className="text-xs text-muted-foreground mt-1">{notif.mensagem}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">{formatDate(notif.created_at)}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleMarcarLida(notif.id)}
+                        className="h-8 px-2 text-gold hover:text-gold hover:bg-gold/20"
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Conferir
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="historico" className="space-y-3 max-h-64 overflow-y-auto">
+              {historicoNotificacoes.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma notificação no histórico
+                </p>
+              ) : (
+                historicoNotificacoes.map((notif) => (
+                  <div key={notif.id} className="p-3 bg-muted/30 rounded-xl opacity-70">
+                    <div className="flex items-start gap-3">
+                      {notif.tipo === 'reuniao' || notif.tipo === 'reuniao_cancelada' ? (
+                        <Video className={`h-5 w-5 mt-0.5 ${notif.tipo === 'reuniao_cancelada' ? 'text-red-400' : 'text-muted-foreground'}`} />
+                      ) : (
+                        <Bell className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium text-sm text-foreground">{notif.titulo}</p>
+                        {notif.mensagem && (
+                          <p className="text-xs text-muted-foreground mt-1">{notif.mensagem}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">{formatDate(notif.created_at)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
+        </Card>
+
+        {/* Conquistas Recentes */}
+        <Card className="p-6 gradient-card border-0 shadow-md animate-slide-up" style={{ animationDelay: "0.5s" }}>
           <h3 className="font-semibold text-foreground mb-4">Conquistas Recentes</h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-3 bg-gold/10 rounded-xl">
@@ -231,7 +387,7 @@ const Perfil = () => {
         </Card>
 
         {/* Configurações */}
-        <Card className="p-4 gradient-card border-0 shadow-md animate-slide-up" style={{ animationDelay: "0.5s" }}>
+        <Card className="p-4 gradient-card border-0 shadow-md animate-slide-up" style={{ animationDelay: "0.6s" }}>
           <h3 className="font-semibold text-foreground mb-3 px-2">Configurações</h3>
           <div className="space-y-2">
             <button 
@@ -239,9 +395,6 @@ const Perfil = () => {
               className="w-full text-left px-3 py-3 hover:bg-muted/30 rounded-xl transition-smooth text-sm text-foreground"
             >
               Editar Perfil
-            </button>
-            <button className="w-full text-left px-3 py-3 hover:bg-muted/30 rounded-xl transition-smooth text-sm text-foreground">
-              Notificações
             </button>
             <button className="w-full text-left px-3 py-3 hover:bg-muted/30 rounded-xl transition-smooth text-sm text-foreground">
               Privacidade
@@ -257,7 +410,7 @@ const Perfil = () => {
           onClick={handleLogout}
           variant="destructive"
           className="w-full h-12 rounded-xl font-semibold animate-scale-in"
-          style={{ animationDelay: "0.6s" }}
+          style={{ animationDelay: "0.7s" }}
         >
           <LogOut className="mr-2 h-5 w-5" />
           Sair da Conta

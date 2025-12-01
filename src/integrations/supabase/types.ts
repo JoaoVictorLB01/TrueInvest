@@ -128,6 +128,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          lida: boolean | null
+          mensagem: string | null
+          referencia_id: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          mensagem?: string | null
+          referencia_id?: string | null
+          tipo?: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          mensagem?: string | null
+          referencia_id?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -232,6 +265,42 @@ export type Database = {
           localizacao_saida?: string | null
           saida?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      reunioes: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          data_hora: string
+          descricao: string | null
+          id: string
+          link: string | null
+          status: string | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          data_hora: string
+          descricao?: string | null
+          id?: string
+          link?: string | null
+          status?: string | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          data_hora?: string
+          descricao?: string | null
+          id?: string
+          link?: string | null
+          status?: string | null
+          titulo?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
