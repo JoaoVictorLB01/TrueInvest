@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog, Video, Link, Calendar, X } from "lucide-react";
+import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog, Video, Link, Calendar, X, Settings } from "lucide-react";
 import Header from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import LoginSettingsDialog from "@/components/LoginSettingsDialog";
 
 interface UserProfile {
   id: string;
@@ -90,6 +91,9 @@ const Admin = () => {
   const [reuniaoData, setReuniaoData] = useState("");
   const [reuniaoHora, setReuniaoHora] = useState("");
   const [savingReuniao, setSavingReuniao] = useState(false);
+
+  // Estado para configurações de login
+  const [loginSettingsOpen, setLoginSettingsOpen] = useState(false);
 
   useEffect(() => {
     checkAdminStatus();
@@ -631,7 +635,7 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="users" className="rounded-xl">
                 <Users className="h-4 w-4 mr-2" />
                 Usuários
@@ -643,6 +647,10 @@ const Admin = () => {
               <TabsTrigger value="reunioes" className="rounded-xl">
                 <Video className="h-4 w-4 mr-2" />
                 Reuniões
+              </TabsTrigger>
+              <TabsTrigger value="config" className="rounded-xl">
+                <Settings className="h-4 w-4 mr-2" />
+                Config
               </TabsTrigger>
             </TabsList>
 
@@ -702,6 +710,25 @@ const Admin = () => {
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Reunião
                 </Button>
+              </div>
+            </TabsContent>
+
+            {/* Tab de Configurações */}
+            <TabsContent value="config" className="space-y-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Personalização da Tela de Login</h3>
+                    <p className="text-sm text-muted-foreground">Configure o logo e fundo da tela de login</p>
+                  </div>
+                  <Button
+                    onClick={() => setLoginSettingsOpen(true)}
+                    className="h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configurar
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -1251,6 +1278,12 @@ const Admin = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Dialog de Configurações de Login */}
+        <LoginSettingsDialog
+          open={loginSettingsOpen}
+          onOpenChange={setLoginSettingsOpen}
+        />
       </div>
     </div>
   );

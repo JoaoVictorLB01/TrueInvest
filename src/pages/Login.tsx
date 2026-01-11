@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { LogIn, UserPlus, Mail, Lock, User, ArrowLeft, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useLoginSettings } from "@/hooks/useLoginSettings";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -32,6 +33,7 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
   const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const { settings: loginSettings, loading: settingsLoading } = useLoginSettings();
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -104,7 +106,7 @@ const Login = () => {
     setConfirmPassword("");
   };
 
-  if (authLoading) {
+  if (authLoading || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-primary">
         <Loader2 className="h-8 w-8 animate-spin text-gold" />
@@ -112,13 +114,47 @@ const Login = () => {
     );
   }
 
+  const hasBackground = loginSettings.login_background_type !== 'none' && loginSettings.login_background_url;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
-      <div className="w-full max-w-md animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4 relative overflow-hidden">
+      {/* Background Video/Image */}
+      {hasBackground && (
+        <div className="absolute inset-0 z-0">
+          {loginSettings.login_background_type === 'video' ? (
+            <video
+              src={loginSettings.login_background_url!}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          ) : (
+            <img
+              src={loginSettings.login_background_url!}
+              alt="Background"
+              className="w-full h-full object-cover"
+            />
+          )}
+          {/* Overlay for better readability */}
+          <div className="absolute inset-0 bg-gradient-primary/80" />
+        </div>
+      )}
+
+      <div className="w-full max-w-md animate-fade-in relative z-10">
         <div className="text-center mb-8">
           <div className="inline-block mb-6">
-            <div className="w-20 h-20 bg-gold rounded-2xl flex items-center justify-center shadow-gold animate-bounce-in">
-              <span className="text-3xl font-bold text-primary">TI</span>
+            <div className="w-20 h-20 bg-gold rounded-2xl flex items-center justify-center shadow-gold animate-bounce-in overflow-hidden">
+              {loginSettings.logo_url ? (
+                <img
+                  src={loginSettings.logo_url}
+                  alt="Logo"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span className="text-3xl font-bold text-primary">TI</span>
+              )}
             </div>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2 animate-slide-up">True Invest</h1>
