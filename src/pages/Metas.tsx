@@ -130,12 +130,11 @@ const Metas = () => {
       setUserConquistas(userConquistasData.map(uc => uc.conquista_id));
     }
 
-    // Fetch metas completadas pelo usuário
+    // Fetch progresso de todas as metas do usuário (independente do status)
     const { data: progressoData } = await supabase
       .from('progresso_metas')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('completada', true);
+      .eq('user_id', user.id);
 
     if (progressoData) {
       const progressoMap: Record<string, ProgressoMeta> = {};
@@ -163,7 +162,16 @@ const Metas = () => {
     if (!user) return;
     
     setCompletingMeta(meta.id);
-    const isCompletada = !!metasCompletadas[meta.id];
+    
+    // Buscar o estado atual diretamente do banco (fonte da verdade)
+    const { data: progressoAtual } = await supabase
+      .from('progresso_metas')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('meta_id', meta.id)
+      .maybeSingle();
+
+    const isCompletada = progressoAtual?.completada === true;
 
     try {
       // Get current profile points
@@ -183,11 +191,12 @@ const Metas = () => {
             .update({ pontos_totais: newPoints })
             .eq('id', user.id);
 
-          // Deletar registro de progresso
+          // Atualizar registro para completada = false
           await supabase
             .from('progresso_metas')
-            .delete()
-            .eq('id', metasCompletadas[meta.id].id);
+            .update({ completada: false, valor_atual: 0 })
+            .eq('user_id', user.id)
+            .eq('meta_id', meta.id);
 
           toast.success(`Meta desmarcada! -${meta.pontos_recompensa} pontos`);
         } else {
@@ -199,21 +208,30 @@ const Metas = () => {
             .update({ pontos_totais: newPoints })
             .eq('id', user.id);
 
-          // Criar registro de progresso
-          await supabase
-            .from('progresso_metas')
-            .insert({
-              user_id: user.id,
-              meta_id: meta.id,
-              completada: true,
-              valor_atual: meta.valor_objetivo,
-              data_inicio: new Date().toISOString().split('T')[0]
-            });
+          if (progressoAtual) {
+            // Atualizar registro existente
+            await supabase
+              .from('progresso_metas')
+              .update({ completada: true, valor_atual: meta.valor_objetivo })
+              .eq('user_id', user.id)
+              .eq('meta_id', meta.id);
+          } else {
+            // Criar novo registro
+            await supabase
+              .from('progresso_metas')
+              .insert({
+                user_id: user.id,
+                meta_id: meta.id,
+                completada: true,
+                valor_atual: meta.valor_objetivo,
+                data_inicio: new Date().toISOString().split('T')[0]
+              });
+          }
 
           toast.success(`Meta concluída! +${meta.pontos_recompensa} pontos`);
         }
         
-        // Refresh data
+        // Recarregar dados para garantir UI sincronizada
         await fetchData();
       }
     } catch (error) {
@@ -276,7 +294,8 @@ const Metas = () => {
             {metas.map((meta, index) => {
               const Icon = getIconByType(meta.tipo);
               const colors = getColorByType(meta.tipo);
-              const isCompletada = !!metasCompletadas[meta.id];
+              // Usar o campo completada do banco como fonte da verdade
+              const isCompletada = metasCompletadas[meta.id]?.completada === true;
               const progresso = isCompletada ? 100 : 0;
               
               return (
