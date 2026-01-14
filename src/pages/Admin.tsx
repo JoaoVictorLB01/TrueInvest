@@ -221,8 +221,22 @@ const Admin = () => {
   };
 
   const handleSaveMeta = async () => {
-    if (!metaTitulo.trim()) {
+    const trimmedTitulo = metaTitulo.trim();
+    const trimmedDescricao = metaDescricao.trim();
+    
+    if (!trimmedTitulo) {
       toast.error("Título é obrigatório");
+      return;
+    }
+
+    // Input validation - length limits
+    if (trimmedTitulo.length > 200) {
+      toast.error("Título muito longo (máx 200 caracteres)");
+      return;
+    }
+
+    if (trimmedDescricao.length > 2000) {
+      toast.error("Descrição muito longa (máx 2000 caracteres)");
       return;
     }
 
@@ -280,9 +294,38 @@ const Admin = () => {
   };
 
   const handleSaveReuniao = async () => {
-    if (!reuniaoTitulo.trim()) {
+    const trimmedTitulo = reuniaoTitulo.trim();
+    const trimmedDescricao = reuniaoDescricao.trim();
+    const trimmedLink = reuniaoLink.trim();
+    
+    if (!trimmedTitulo) {
       toast.error("Título é obrigatório");
       return;
+    }
+
+    // Input validation - length limits
+    if (trimmedTitulo.length > 200) {
+      toast.error("Título muito longo (máx 200 caracteres)");
+      return;
+    }
+
+    if (trimmedDescricao.length > 2000) {
+      toast.error("Descrição muito longa (máx 2000 caracteres)");
+      return;
+    }
+
+    // URL format validation
+    if (trimmedLink) {
+      if (trimmedLink.length > 500) {
+        toast.error("Link muito longo (máx 500 caracteres)");
+        return;
+      }
+      try {
+        new URL(trimmedLink);
+      } catch {
+        toast.error("Link inválido. Use uma URL completa (ex: https://...)");
+        return;
+      }
     }
 
     if (!reuniaoData || !reuniaoHora) {
@@ -296,9 +339,9 @@ const Admin = () => {
       const dataHora = new Date(`${reuniaoData}T${reuniaoHora}:00`).toISOString();
 
       const reuniaoData_obj = {
-        titulo: reuniaoTitulo.trim(),
-        descricao: reuniaoDescricao.trim() || null,
-        link: reuniaoLink.trim() || null,
+        titulo: trimmedTitulo,
+        descricao: trimmedDescricao || null,
+        link: trimmedLink || null,
         data_hora: dataHora,
         status: 'agendada',
         created_by: user!.id,
@@ -555,8 +598,36 @@ const Admin = () => {
   const handleSaveEdit = async () => {
     if (!editingUser) return;
 
-    if (!editNome.trim() || !editEmail.trim()) {
+    const trimmedNome = editNome.trim();
+    const trimmedEmail = editEmail.trim();
+    const trimmedTelefone = editTelefone.trim();
+
+    if (!trimmedNome || !trimmedEmail) {
       toast.error("Nome e email são obrigatórios");
+      return;
+    }
+
+    // Input validation - length limits
+    if (trimmedNome.length > 150) {
+      toast.error("Nome muito longo (máx 150 caracteres)");
+      return;
+    }
+
+    if (trimmedEmail.length > 255) {
+      toast.error("Email muito longo (máx 255 caracteres)");
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error("Formato de email inválido");
+      return;
+    }
+
+    // Phone validation
+    if (trimmedTelefone && trimmedTelefone.length > 20) {
+      toast.error("Telefone muito longo (máx 20 caracteres)");
       return;
     }
 
@@ -566,9 +637,9 @@ const Admin = () => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          nome: editNome.trim(),
-          email: editEmail.trim(),
-          telefone: editTelefone.trim() || null,
+          nome: trimmedNome,
+          email: trimmedEmail,
+          telefone: trimmedTelefone || null,
         })
         .eq('id', editingUser.id);
 
