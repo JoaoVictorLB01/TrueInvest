@@ -151,9 +151,9 @@ const Metas = () => {
       setMetaEventos(eventosMap);
     }
 
-    // Calculate ranking
+    // Calculate ranking using public view (no sensitive data exposed)
     const { data: allProfiles } = await supabase
-      .from('profiles')
+      .from('profiles_public')
       .select('id, pontos_totais')
       .order('pontos_totais', { ascending: false });
 

@@ -72,9 +72,9 @@ const Perfil = () => {
       setProfile(profileData);
     }
 
-    // Calculate ranking
+    // Calculate ranking using public view (no sensitive data exposed)
     const { data: allProfiles } = await supabase
-      .from('profiles')
+      .from('profiles_public')
       .select('id, pontos_totais')
       .order('pontos_totais', { ascending: false });
 
@@ -143,6 +143,37 @@ const Perfil = () => {
   const handleSaveEdit = async () => {
     if (!user || !profile) return;
 
+    const trimmedNome = editNome.trim();
+    const trimmedEmail = editEmail.trim();
+
+    // Input validation
+    if (!trimmedNome) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+
+    if (trimmedNome.length > 150) {
+      toast.error("Nome muito longo (máx 150 caracteres)");
+      return;
+    }
+
+    if (!trimmedEmail) {
+      toast.error("Email é obrigatório");
+      return;
+    }
+
+    if (trimmedEmail.length > 255) {
+      toast.error("Email muito longo (máx 255 caracteres)");
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error("Formato de email inválido");
+      return;
+    }
+
     setUploading(true);
     try {
       let photoUrl = profile.foto;
@@ -169,8 +200,8 @@ const Perfil = () => {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          nome: editNome,
-          email: editEmail,
+          nome: trimmedNome,
+          email: trimmedEmail,
           foto: photoUrl,
         })
         .eq('id', user.id);

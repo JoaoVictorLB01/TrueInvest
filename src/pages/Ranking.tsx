@@ -49,8 +49,9 @@ const Ranking = () => {
   }, [user, authLoading, navigate]);
 
   const fetchRanking = async () => {
+    // Use the public view that only exposes necessary fields (no email/phone)
     const { data, error } = await supabase
-      .from('profiles')
+      .from('profiles_public')
       .select('id, nome, pontos_totais, foto')
       .order('pontos_totais', { ascending: false })
       .limit(20);
