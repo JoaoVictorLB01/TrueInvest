@@ -460,7 +460,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          foto: string | null
+          id: string | null
+          nome: string | null
+          pontos_totais: number | null
+        }
+        Insert: {
+          foto?: string | null
+          id?: string | null
+          nome?: string | null
+          pontos_totais?: number | null
+        }
+        Update: {
+          foto?: string | null
+          id?: string | null
+          nome?: string | null
+          pontos_totais?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
