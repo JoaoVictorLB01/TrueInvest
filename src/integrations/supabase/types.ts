@@ -116,6 +116,41 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_eventos: {
+        Row: {
+          created_at: string | null
+          data_hora: string
+          id: string
+          meta_id: string
+          pontos_ganhos: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_hora?: string
+          id?: string
+          meta_id: string
+          pontos_ganhos?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_hora?: string
+          id?: string
+          meta_id?: string
+          pontos_ganhos?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_eventos_meta_id_fkey"
+            columns: ["meta_id"]
+            isOneToOne: false
+            referencedRelation: "metas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       metas: {
         Row: {
           ativo: boolean | null
@@ -125,6 +160,7 @@ export type Database = {
           periodo: string
           pontos_recompensa: number
           tipo: string
+          tipo_meta: string
           titulo: string
           valor_objetivo: number
         }
@@ -136,6 +172,7 @@ export type Database = {
           periodo?: string
           pontos_recompensa: number
           tipo: string
+          tipo_meta?: string
           titulo: string
           valor_objetivo: number
         }
@@ -147,6 +184,7 @@ export type Database = {
           periodo?: string
           pontos_recompensa?: number
           tipo?: string
+          tipo_meta?: string
           titulo?: string
           valor_objetivo?: number
         }

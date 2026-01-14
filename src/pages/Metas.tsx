@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, Calendar, TrendingUp, Award, CheckCircle2, Loader2 } from "lucide-react";
+import { Target, Calendar, TrendingUp, Award, CheckCircle2, Loader2, Undo2, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,17 +22,18 @@ interface Meta {
   titulo: string;
   descricao: string | null;
   tipo: string;
+  tipo_meta: 'unica' | 'recorrente';
   valor_objetivo: number;
   pontos_recompensa: number;
   periodo: string;
 }
 
-interface ProgressoMeta {
+interface MetaEvento {
   id: string;
-  meta_id: string;
   user_id: string;
-  completada: boolean;
-  data_inicio: string;
+  meta_id: string;
+  data_hora: string;
+  pontos_ganhos: number;
 }
 
 interface Conquista {
@@ -70,10 +71,10 @@ const Metas = () => {
   const [metas, setMetas] = useState<Meta[]>([]);
   const [conquistas, setConquistas] = useState<Conquista[]>([]);
   const [userConquistas, setUserConquistas] = useState<string[]>([]);
-  const [metasCompletadas, setMetasCompletadas] = useState<Record<string, ProgressoMeta>>({});
+  const [metaEventos, setMetaEventos] = useState<Record<string, MetaEvento[]>>({});
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<number | null>(null);
-  const [completingMeta, setCompletingMeta] = useState<string | null>(null);
+  const [processingMeta, setProcessingMeta] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -100,7 +101,7 @@ const Metas = () => {
       setProfile(profileData);
     }
 
-    // Fetch metas
+    // Fetch metas with tipo_meta
     const { data: metasData } = await supabase
       .from('metas')
       .select('*')
@@ -108,7 +109,8 @@ const Metas = () => {
       .order('periodo');
 
     if (metasData) {
-      setMetas(metasData);
+      // Cast to include tipo_meta
+      setMetas(metasData as Meta[]);
     }
 
     // Fetch conquistas
@@ -130,18 +132,23 @@ const Metas = () => {
       setUserConquistas(userConquistasData.map(uc => uc.conquista_id));
     }
 
-    // Fetch progresso de todas as metas do usuário (independente do status)
-    const { data: progressoData } = await supabase
-      .from('progresso_metas')
+    // Fetch meta_eventos for the user
+    const { data: eventosData } = await supabase
+      .from('meta_eventos')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('data_hora', { ascending: false });
 
-    if (progressoData) {
-      const progressoMap: Record<string, ProgressoMeta> = {};
-      progressoData.forEach(p => {
-        progressoMap[p.meta_id] = p;
+    if (eventosData) {
+      // Group events by meta_id
+      const eventosMap: Record<string, MetaEvento[]> = {};
+      eventosData.forEach((evento: MetaEvento) => {
+        if (!eventosMap[evento.meta_id]) {
+          eventosMap[evento.meta_id] = [];
+        }
+        eventosMap[evento.meta_id].push(evento);
       });
-      setMetasCompletadas(progressoMap);
+      setMetaEventos(eventosMap);
     }
 
     // Calculate ranking
@@ -158,87 +165,99 @@ const Metas = () => {
     setLoading(false);
   };
 
-  const handleToggleMeta = async (meta: Meta) => {
-    if (!user) return;
+  const handleConcluirMeta = async (meta: Meta) => {
+    if (!user || !profile) return;
     
-    setCompletingMeta(meta.id);
+    setProcessingMeta(meta.id);
     
-    // Buscar o estado atual diretamente do banco (fonte da verdade)
-    const { data: progressoAtual } = await supabase
-      .from('progresso_metas')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('meta_id', meta.id)
-      .maybeSingle();
-
-    const isCompletada = progressoAtual?.completada === true;
-
     try {
-      // Get current profile points
-      const { data: currentProfile } = await supabase
+      // Add points to user
+      const newPoints = (profile.pontos_totais || 0) + meta.pontos_recompensa;
+      
+      await supabase
         .from('profiles')
-        .select('pontos_totais')
-        .eq('id', user.id)
-        .single();
+        .update({ pontos_totais: newPoints })
+        .eq('id', user.id);
 
-      if (currentProfile) {
-        if (isCompletada) {
-          // Desmarcar meta - remover pontos
-          const newPoints = Math.max(0, (currentProfile.pontos_totais || 0) - meta.pontos_recompensa);
-          
-          await supabase
-            .from('profiles')
-            .update({ pontos_totais: newPoints })
-            .eq('id', user.id);
+      // Create event record
+      await supabase
+        .from('meta_eventos')
+        .insert({
+          user_id: user.id,
+          meta_id: meta.id,
+          pontos_ganhos: meta.pontos_recompensa
+        });
 
-          // Atualizar registro para completada = false
-          await supabase
-            .from('progresso_metas')
-            .update({ completada: false, valor_atual: 0 })
-            .eq('user_id', user.id)
-            .eq('meta_id', meta.id);
-
-          toast.success(`Meta desmarcada! -${meta.pontos_recompensa} pontos`);
-        } else {
-          // Marcar meta - adicionar pontos
-          const newPoints = (currentProfile.pontos_totais || 0) + meta.pontos_recompensa;
-          
-          await supabase
-            .from('profiles')
-            .update({ pontos_totais: newPoints })
-            .eq('id', user.id);
-
-          if (progressoAtual) {
-            // Atualizar registro existente
-            await supabase
-              .from('progresso_metas')
-              .update({ completada: true, valor_atual: meta.valor_objetivo })
-              .eq('user_id', user.id)
-              .eq('meta_id', meta.id);
-          } else {
-            // Criar novo registro
-            await supabase
-              .from('progresso_metas')
-              .insert({
-                user_id: user.id,
-                meta_id: meta.id,
-                completada: true,
-                valor_atual: meta.valor_objetivo,
-                data_inicio: new Date().toISOString().split('T')[0]
-              });
-          }
-
-          toast.success(`Meta concluída! +${meta.pontos_recompensa} pontos`);
-        }
-        
-        // Recarregar dados para garantir UI sincronizada
-        await fetchData();
-      }
+      toast.success(`Meta concluída! +${meta.pontos_recompensa} pontos`);
+      
+      // Reload data to sync UI
+      await fetchData();
     } catch (error) {
-      toast.error("Erro ao atualizar meta");
+      toast.error("Erro ao concluir meta");
       console.error(error);
     } finally {
-      setCompletingMeta(null);
+      setProcessingMeta(null);
+    }
+  };
+
+  const handleDesfazerMeta = async (meta: Meta) => {
+    if (!user || !profile) return;
+    
+    const eventos = metaEventos[meta.id] || [];
+    if (eventos.length === 0) return;
+    
+    setProcessingMeta(meta.id);
+    
+    try {
+      // Get the most recent event for this meta
+      const ultimoEvento = eventos[0]; // Already sorted by data_hora DESC
+      
+      // Calculate new points (don't go negative)
+      const newPoints = Math.max(0, (profile.pontos_totais || 0) - ultimoEvento.pontos_ganhos);
+      
+      // Update user points
+      await supabase
+        .from('profiles')
+        .update({ pontos_totais: newPoints })
+        .eq('id', user.id);
+
+      // Delete the most recent event
+      await supabase
+        .from('meta_eventos')
+        .delete()
+        .eq('id', ultimoEvento.id);
+
+      toast.success(`Meta desfeita! -${ultimoEvento.pontos_ganhos} pontos`);
+      
+      // Reload data to sync UI
+      await fetchData();
+    } catch (error) {
+      toast.error("Erro ao desfazer meta");
+      console.error(error);
+    } finally {
+      setProcessingMeta(null);
+    }
+  };
+
+  const getMetaStatus = (meta: Meta) => {
+    const eventos = metaEventos[meta.id] || [];
+    const count = eventos.length;
+    
+    if (meta.tipo_meta === 'unica') {
+      return {
+        isCompleted: count > 0,
+        count,
+        canComplete: count === 0,
+        canUndo: count > 0
+      };
+    } else {
+      // Recorrente
+      return {
+        isCompleted: false, // Recorrentes nunca são "completadas" definitivamente
+        count,
+        canComplete: true, // Sempre pode adicionar mais
+        canUndo: count > 0
+      };
     }
   };
 
@@ -267,7 +286,7 @@ const Metas = () => {
               <div>
                 <p className="text-sm text-gold-foreground/80">Pontuação Total</p>
                 <h2 className="text-3xl font-bold text-gold-foreground">
-                  {profile?.pontos_totais.toLocaleString() || 0}
+                  {profile?.pontos_totais?.toLocaleString() || 0}
                 </h2>
               </div>
             </div>
@@ -294,15 +313,17 @@ const Metas = () => {
             {metas.map((meta, index) => {
               const Icon = getIconByType(meta.tipo);
               const colors = getColorByType(meta.tipo);
-              // Usar o campo completada do banco como fonte da verdade
-              const isCompletada = metasCompletadas[meta.id]?.completada === true;
-              const progresso = isCompletada ? 100 : 0;
+              const status = getMetaStatus(meta);
+              const isRecorrente = meta.tipo_meta === 'recorrente';
+              const progresso = meta.tipo_meta === 'unica' 
+                ? (status.isCompleted ? 100 : 0)
+                : Math.min(100, (status.count / meta.valor_objetivo) * 100);
               
               return (
                 <Card 
                   key={meta.id}
                   className={`p-5 border-0 shadow-md card-interactive opacity-0-animate animate-slide-up ${
-                    isCompletada ? "gradient-gold" : "gradient-card"
+                    status.isCompleted && meta.tipo_meta === 'unica' ? "gradient-gold" : "gradient-card"
                   }`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
@@ -314,7 +335,15 @@ const Metas = () => {
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h4 className="font-semibold text-foreground">{meta.titulo}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-foreground">{meta.titulo}</h4>
+                            {isRecorrente && (
+                              <Badge variant="outline" className="text-xs">
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Recorrente
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground capitalize">{meta.periodo}</p>
                         </div>
                         <Badge variant="secondary" className="text-xs">
@@ -324,17 +353,18 @@ const Metas = () => {
 
                       <div className="mb-2">
                         <div className="flex justify-between text-sm mb-1">
-                          <span className={isCompletada ? "text-gold-foreground/80" : "text-muted-foreground"}>
-                            {isCompletada ? meta.valor_objetivo : 0} de {meta.valor_objetivo}
+                          <span className={status.isCompleted && meta.tipo_meta === 'unica' ? "text-gold-foreground/80" : "text-muted-foreground"}>
+                            {isRecorrente ? `${status.count}x concluída` : (status.isCompleted ? meta.valor_objetivo : 0)} 
+                            {!isRecorrente && ` de ${meta.valor_objetivo}`}
                           </span>
-                          <span className={`font-medium ${isCompletada ? "text-gold-foreground" : "text-foreground"}`}>
-                            {progresso}%
+                          <span className={`font-medium ${status.isCompleted && meta.tipo_meta === 'unica' ? "text-gold-foreground" : "text-foreground"}`}>
+                            {Math.round(progresso)}%
                           </span>
                         </div>
                         <Progress value={progresso} className="h-2" />
                       </div>
 
-                      {isCompletada && (
+                      {status.isCompleted && meta.tipo_meta === 'unica' && (
                         <div className="flex items-center gap-2 mb-2">
                           <CheckCircle2 className="h-4 w-4 text-gold-foreground" />
                           <p className="text-xs text-gold-foreground font-medium">
@@ -343,33 +373,62 @@ const Metas = () => {
                         </div>
                       )}
 
-                      <Button
-                        onClick={() => handleToggleMeta(meta)}
-                        disabled={completingMeta === meta.id}
-                        className={`w-full mt-3 ${
-                          isCompletada 
-                            ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground" 
-                            : "bg-gold hover:bg-gold/90 text-gold-foreground"
-                        }`}
-                        size="sm"
-                      >
-                        {completingMeta === meta.id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processando...
-                          </>
-                        ) : isCompletada ? (
-                          <>
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Desfazer Meta
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Concluir Meta
-                          </>
+                      {isRecorrente && status.count > 0 && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                          <p className="text-xs text-success font-medium">
+                            Total ganho: {status.count * meta.pontos_recompensa} pontos
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Buttons */}
+                      <div className="flex gap-2 mt-3">
+                        {/* Concluir Meta Button - Show for recurring or if unique is not completed */}
+                        {status.canComplete && (
+                          <Button
+                            onClick={() => handleConcluirMeta(meta)}
+                            disabled={processingMeta === meta.id}
+                            className="flex-1 bg-gold hover:bg-gold/90 text-gold-foreground"
+                            size="sm"
+                          >
+                            {processingMeta === meta.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Processando...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Concluir Meta
+                              </>
+                            )}
+                          </Button>
                         )}
-                      </Button>
+
+                        {/* Desfazer Meta Button - Show if there are events to undo */}
+                        {status.canUndo && (
+                          <Button
+                            onClick={() => handleDesfazerMeta(meta)}
+                            disabled={processingMeta === meta.id}
+                            variant="outline"
+                            className={`${status.canComplete ? '' : 'flex-1'} border-destructive/50 text-destructive hover:bg-destructive/10`}
+                            size="sm"
+                          >
+                            {processingMeta === meta.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Processando...
+                              </>
+                            ) : (
+                              <>
+                                <Undo2 className="mr-2 h-4 w-4" />
+                                Desfazer{isRecorrente && status.count > 0 ? ` (${status.count})` : ''}
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Card>
