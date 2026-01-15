@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog, Video, Link, Calendar, X, Settings } from "lucide-react";
+import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog, Video, Link, Calendar, X, Settings, Clock } from "lucide-react";
 import Header from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +54,18 @@ interface Reuniao {
   created_at: string | null;
 }
 
+interface RegistroPonto {
+  id: string;
+  user_id: string;
+  entrada: string;
+  saida: string | null;
+  localizacao_entrada: string | null;
+  localizacao_saida: string | null;
+  created_at: string | null;
+  user_nome?: string;
+  user_email?: string;
+}
+
 const Admin = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -97,6 +109,11 @@ const Admin = () => {
   // Estado para configurações de login
   const [loginSettingsOpen, setLoginSettingsOpen] = useState(false);
 
+  // Estados para Registros de Ponto
+  const [registrosPonto, setRegistrosPonto] = useState<RegistroPonto[]>([]);
+  const [pontoSearchTerm, setPontoSearchTerm] = useState("");
+  const [pontoDataFiltro, setPontoDataFiltro] = useState("");
+
   useEffect(() => {
     checkAdminStatus();
   }, [user]);
@@ -121,6 +138,7 @@ const Admin = () => {
     await fetchUsers();
     await fetchMetas();
     await fetchReunioes();
+    await fetchRegistrosPonto();
     setLoading(false);
   };
 
@@ -177,6 +195,37 @@ const Admin = () => {
     }
 
     setReunioes(data || []);
+  };
+
+  const fetchRegistrosPonto = async () => {
+    // Buscar registros de ponto de todos os usuários (admin pode ver todos via RLS)
+    const { data: pontosData, error: pontosError } = await supabase
+      .from('registros_ponto')
+      .select('*')
+      .order('entrada', { ascending: false })
+      .limit(500);
+
+    if (pontosError) {
+      console.error("Erro ao carregar registros de ponto:", pontosError);
+      return;
+    }
+
+    // Buscar dados dos usuários para associar nomes
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, nome, email');
+
+    const profilesMap = new Map(
+      (profilesData || []).map(p => [p.id, { nome: p.nome, email: p.email }])
+    );
+
+    const registrosComUsuario: RegistroPonto[] = (pontosData || []).map(ponto => ({
+      ...ponto,
+      user_nome: profilesMap.get(ponto.user_id)?.nome || 'Usuário desconhecido',
+      user_email: profilesMap.get(ponto.user_id)?.email || ''
+    }));
+
+    setRegistrosPonto(registrosComUsuario);
   };
 
   const openMetaDialog = (meta?: Meta) => {
@@ -711,7 +760,7 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsList className="grid w-full grid-cols-5 mb-6">
               <TabsTrigger value="users" className="rounded-xl">
                 <Users className="h-4 w-4 mr-2" />
                 Usuários
@@ -723,6 +772,10 @@ const Admin = () => {
               <TabsTrigger value="reunioes" className="rounded-xl">
                 <Video className="h-4 w-4 mr-2" />
                 Reuniões
+              </TabsTrigger>
+              <TabsTrigger value="ponto" className="rounded-xl">
+                <Clock className="h-4 w-4 mr-2" />
+                Ponto
               </TabsTrigger>
               <TabsTrigger value="config" className="rounded-xl">
                 <Settings className="h-4 w-4 mr-2" />
@@ -787,6 +840,51 @@ const Admin = () => {
                   Nova Reunião
                 </Button>
               </div>
+            </TabsContent>
+
+            {/* Tab de Ponto */}
+            <TabsContent value="ponto" className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="ponto-search" className="text-foreground flex items-center gap-2 mb-2">
+                    <Search className="h-4 w-4" />
+                    Buscar por usuário
+                  </Label>
+                  <Input
+                    id="ponto-search"
+                    type="text"
+                    placeholder="Nome ou e-mail..."
+                    value={pontoSearchTerm}
+                    onChange={(e) => setPontoSearchTerm(e.target.value)}
+                    className="h-12 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="ponto-data" className="text-foreground flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4" />
+                    Filtrar por data
+                  </Label>
+                  <Input
+                    id="ponto-data"
+                    type="date"
+                    value={pontoDataFiltro}
+                    onChange={(e) => setPontoDataFiltro(e.target.value)}
+                    className="h-12 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                {registrosPonto.filter(r => {
+                  const matchesSearch = !pontoSearchTerm || 
+                    r.user_nome?.toLowerCase().includes(pontoSearchTerm.toLowerCase()) ||
+                    r.user_email?.toLowerCase().includes(pontoSearchTerm.toLowerCase());
+                  const matchesDate = !pontoDataFiltro || 
+                    new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
+                  return matchesSearch && matchesDate;
+                }).length} registro(s) encontrado(s)
+              </p>
             </TabsContent>
 
             {/* Tab de Configurações */}
@@ -1057,6 +1155,86 @@ const Admin = () => {
                 <Plus className="h-4 w-4 mr-2" />
                 Agendar Primeira Reunião
               </Button>
+            </Card>
+          )}
+        </div>
+
+        {/* Lista de Registros de Ponto */}
+        <div className="space-y-4">
+          {registrosPonto
+            .filter(r => {
+              const matchesSearch = !pontoSearchTerm || 
+                r.user_nome?.toLowerCase().includes(pontoSearchTerm.toLowerCase()) ||
+                r.user_email?.toLowerCase().includes(pontoSearchTerm.toLowerCase());
+              const matchesDate = !pontoDataFiltro || 
+                new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
+              return matchesSearch && matchesDate;
+            })
+            .map((registro) => {
+              const entradaDate = new Date(registro.entrada);
+              const saidaDate = registro.saida ? new Date(registro.saida) : null;
+              
+              const formatTime = (date: Date) => date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+              const formatDate = (date: Date) => date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", weekday: "short" });
+
+              return (
+                <Card key={registro.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="h-5 w-5 text-gold" />
+                        <h3 className="text-lg font-semibold text-foreground">{registro.user_nome}</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{registro.user_email}</p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        <Calendar className="h-4 w-4 inline mr-1" />
+                        {formatDate(entradaDate)}
+                      </p>
+                      
+                      <div className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Entrada</p>
+                            <p className="text-sm font-semibold text-foreground">{formatTime(entradaDate)}</p>
+                          </div>
+                        </div>
+                        
+                        {saidaDate ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Saída</p>
+                              <p className="text-sm font-semibold text-foreground">{formatTime(saidaDate)}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 opacity-50">
+                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Saída</p>
+                              <p className="text-sm text-muted-foreground">Não registrada</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+
+          {registrosPonto.filter(r => {
+            const matchesSearch = !pontoSearchTerm || 
+              r.user_nome?.toLowerCase().includes(pontoSearchTerm.toLowerCase()) ||
+              r.user_email?.toLowerCase().includes(pontoSearchTerm.toLowerCase());
+            const matchesDate = !pontoDataFiltro || 
+              new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
+            return matchesSearch && matchesDate;
+          }).length === 0 && (
+            <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+              <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">Nenhum registro de ponto encontrado</p>
             </Card>
           )}
         </div>
