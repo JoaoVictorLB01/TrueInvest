@@ -35,6 +35,7 @@ interface Meta {
   titulo: string;
   descricao: string | null;
   tipo: string;
+  tipo_meta: 'unica' | 'recorrente';
   valor_objetivo: number;
   pontos_recompensa: number;
   periodo: string;
@@ -78,6 +79,7 @@ const Admin = () => {
   const [metaValorObjetivo, setMetaValorObjetivo] = useState("");
   const [metaPontosRecompensa, setMetaPontosRecompensa] = useState("");
   const [metaPeriodo, setMetaPeriodo] = useState("mensal");
+  const [metaTipoMeta, setMetaTipoMeta] = useState<'unica' | 'recorrente'>("unica");
   const [metaAtivo, setMetaAtivo] = useState(true);
   const [savingMeta, setSavingMeta] = useState(false);
 
@@ -160,7 +162,7 @@ const Admin = () => {
       return;
     }
 
-    setMetas(data || []);
+    setMetas((data as Meta[]) || []);
   };
 
   const fetchReunioes = async () => {
@@ -183,6 +185,7 @@ const Admin = () => {
       setMetaTitulo(meta.titulo);
       setMetaDescricao(meta.descricao || "");
       setMetaTipo(meta.tipo);
+      setMetaTipoMeta(meta.tipo_meta || 'unica');
       setMetaValorObjetivo(String(meta.valor_objetivo));
       setMetaPontosRecompensa(String(meta.pontos_recompensa));
       setMetaPeriodo(meta.periodo);
@@ -192,6 +195,7 @@ const Admin = () => {
       setMetaTitulo("");
       setMetaDescricao("");
       setMetaTipo("vendas");
+      setMetaTipoMeta("unica");
       setMetaValorObjetivo("");
       setMetaPontosRecompensa("");
       setMetaPeriodo("mensal");
@@ -260,6 +264,7 @@ const Admin = () => {
         titulo: metaTitulo.trim(),
         descricao: metaDescricao.trim() || null,
         tipo: metaTipo,
+        tipo_meta: metaTipoMeta,
         valor_objetivo: valorObj,
         pontos_recompensa: pontosRec,
         periodo: metaPeriodo,
@@ -897,6 +902,11 @@ const Admin = () => {
                     ) : (
                       <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Inativa</span>
                     )}
+                    {meta.tipo_meta === 'recorrente' ? (
+                      <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">Contínua</span>
+                    ) : (
+                      <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Única</span>
+                    )}
                   </div>
                   {meta.descricao && (
                     <p className="text-sm text-muted-foreground mb-2">{meta.descricao}</p>
@@ -1187,6 +1197,19 @@ const Admin = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="meta-tipo-meta" className="text-foreground">Tipo de Meta *</Label>
+                <Select value={metaTipoMeta} onValueChange={(v: 'unica' | 'recorrente') => setMetaTipoMeta(v)}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unica">Única (pode ser concluída apenas uma vez)</SelectItem>
+                    <SelectItem value="recorrente">Contínua (pode ser concluída várias vezes)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
