@@ -742,12 +742,12 @@ const Admin = () => {
     <div className="min-h-screen bg-gradient-primary pb-24">
       <Header title="Painel Admin" subtitle="Gerenciamento" showLogout={false} />
       
-      <div className="p-6 space-y-6 animate-fade-in">
-        <Card className="p-6 bg-card/95 backdrop-blur border-white/10">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Shield className="h-6 w-6 text-gold" />
-              <h2 className="text-xl font-bold text-foreground">Administrador</h2>
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">
+        <Card className="p-4 sm:p-6 bg-card/95 backdrop-blur border-white/10">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-gold" />
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">Admin</h2>
             </div>
             <Button
               variant="outline"
@@ -755,83 +755,83 @@ const Admin = () => {
                 signOut();
                 navigate("/login");
               }}
-              className="h-10 rounded-xl"
+              className="h-9 sm:h-10 rounded-xl text-xs sm:text-sm px-3 sm:px-4"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sair</span>
             </Button>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6 mb-6">
-              <TabsTrigger value="geral" className="rounded-xl">
-                <LayoutDashboard className="h-4 w-4 mr-2" />
-                Geral
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6 h-auto gap-1">
+              <TabsTrigger value="geral" className="rounded-xl flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm">
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden xs:inline sm:ml-1">Geral</span>
               </TabsTrigger>
-              <TabsTrigger value="users" className="rounded-xl">
-                <Users className="h-4 w-4 mr-2" />
-                Usuários
+              <TabsTrigger value="users" className="rounded-xl flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm">
+                <Users className="h-4 w-4" />
+                <span className="hidden xs:inline sm:ml-1">Usuários</span>
               </TabsTrigger>
-              <TabsTrigger value="metas" className="rounded-xl">
-                <Target className="h-4 w-4 mr-2" />
-                Metas
+              <TabsTrigger value="metas" className="rounded-xl flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm">
+                <Target className="h-4 w-4" />
+                <span className="hidden xs:inline sm:ml-1">Metas</span>
               </TabsTrigger>
-              <TabsTrigger value="reunioes" className="rounded-xl">
-                <Video className="h-4 w-4 mr-2" />
-                Reuniões
+              <TabsTrigger value="reunioes" className="rounded-xl flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm">
+                <Video className="h-4 w-4" />
+                <span className="hidden xs:inline sm:ml-1">Reuniões</span>
               </TabsTrigger>
-              <TabsTrigger value="ponto" className="rounded-xl">
-                <Clock className="h-4 w-4 mr-2" />
-                Ponto
+              <TabsTrigger value="ponto" className="rounded-xl flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm">
+                <Clock className="h-4 w-4" />
+                <span className="hidden xs:inline sm:ml-1">Ponto</span>
               </TabsTrigger>
-              <TabsTrigger value="config" className="rounded-xl">
-                <Settings className="h-4 w-4 mr-2" />
-                Config
+              <TabsTrigger value="config" className="rounded-xl flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm">
+                <Settings className="h-4 w-4" />
+                <span className="hidden xs:inline sm:ml-1">Config</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Tab de Visão Geral - Mostra resumo de tudo */}
-            <TabsContent value="geral" className="space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("users")}>
-                  <div className="flex items-center gap-3">
-                    <Users className="h-8 w-8 text-gold" />
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">{users.length}</p>
-                      <p className="text-xs text-muted-foreground">Usuários</p>
+            <TabsContent value="geral" className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <Card className="p-3 sm:p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("users")}>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Users className="h-6 w-6 sm:h-8 sm:w-8 text-gold flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{users.length}</p>
+                      <p className="text-xs text-muted-foreground truncate">Usuários</p>
                     </div>
                   </div>
                 </Card>
-                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("metas")}>
-                  <div className="flex items-center gap-3">
-                    <Target className="h-8 w-8 text-gold" />
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">{metas.length}</p>
-                      <p className="text-xs text-muted-foreground">Metas</p>
+                <Card className="p-3 sm:p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("metas")}>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Target className="h-6 w-6 sm:h-8 sm:w-8 text-gold flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{metas.length}</p>
+                      <p className="text-xs text-muted-foreground truncate">Metas</p>
                     </div>
                   </div>
                 </Card>
-                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("reunioes")}>
-                  <div className="flex items-center gap-3">
-                    <Video className="h-8 w-8 text-gold" />
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">{reunioes.length}</p>
-                      <p className="text-xs text-muted-foreground">Reuniões</p>
+                <Card className="p-3 sm:p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("reunioes")}>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Video className="h-6 w-6 sm:h-8 sm:w-8 text-gold flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{reunioes.length}</p>
+                      <p className="text-xs text-muted-foreground truncate">Reuniões</p>
                     </div>
                   </div>
                 </Card>
-                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("ponto")}>
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-8 w-8 text-gold" />
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">{registrosPonto.length}</p>
-                      <p className="text-xs text-muted-foreground">Registros</p>
+                <Card className="p-3 sm:p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("ponto")}>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-gold flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{registrosPonto.length}</p>
+                      <p className="text-xs text-muted-foreground truncate">Registros</p>
                     </div>
                   </div>
                 </Card>
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Clique em uma seção acima para ver os detalhes, ou selecione uma aba.
+              <p className="text-xs sm:text-sm text-muted-foreground text-center">
+                Toque em uma seção para ver os detalhes
               </p>
             </TabsContent>
 
@@ -860,60 +860,60 @@ const Admin = () => {
               </p>
 
               {/* Lista de Usuários dentro da Tab */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {filteredUsers.map((u) => (
-                  <Card key={u.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <Card key={u.id} className="p-4 sm:p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
+                    <div className="flex flex-col gap-3 sm:gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-foreground">{u.nome}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="text-base sm:text-lg font-semibold text-foreground">{u.nome}</h3>
                           {u.is_admin && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-gold/20 text-gold flex items-center gap-1">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold flex items-center gap-1">
                               <Shield className="h-3 w-3" />
                               Admin
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{u.email}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground break-all">{u.email}</p>
                         {u.telefone && (
-                          <p className="text-sm text-muted-foreground">{u.telefone}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">{u.telefone}</p>
                         )}
-                        <p className="text-sm font-medium text-gold mt-2">
+                        <p className="text-xs sm:text-sm font-medium text-gold mt-2">
                           {u.pontos_totais} pontos
                         </p>
                       </div>
                       
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                         <Button
                           variant="outline"
                           onClick={() => handleToggleAdmin(u.id, u.nome, u.is_admin || false)}
-                          className={`h-10 rounded-xl ${u.is_admin ? 'border-orange-500/30 hover:bg-orange-500/10' : 'border-green-500/30 hover:bg-green-500/10'}`}
+                          className={`h-9 sm:h-10 rounded-xl text-xs sm:text-sm px-2 sm:px-4 ${u.is_admin ? 'border-orange-500/30 hover:bg-orange-500/10' : 'border-green-500/30 hover:bg-green-500/10'}`}
                         >
-                          <UserCog className="h-4 w-4 mr-2" />
-                          {u.is_admin ? 'Remover Admin' : 'Tornar Admin'}
+                          <UserCog className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">{u.is_admin ? 'Remover Admin' : 'Tornar Admin'}</span>
                         </Button>
 
                         <Button
                           variant="outline"
                           onClick={() => openEditDialog(u)}
-                          className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                          className="h-9 sm:h-10 rounded-xl text-xs sm:text-sm px-2 sm:px-4 border-blue-500/30 hover:bg-blue-500/10"
                         >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
+                          <Edit className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Editar</span>
                         </Button>
 
                         <Button
                           variant="outline"
                           onClick={() => handleResetUser(u.id, u.nome)}
                           disabled={resettingUserId === u.id}
-                          className="h-10 rounded-xl border-gold/30 hover:bg-gold/10"
+                          className="h-9 sm:h-10 rounded-xl text-xs sm:text-sm px-2 sm:px-4 border-gold/30 hover:bg-gold/10"
                         >
                           {resettingUserId === u.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <>
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Limpar Dados
+                              <Trash2 className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">Limpar Dados</span>
                             </>
                           )}
                         </Button>
@@ -921,10 +921,10 @@ const Admin = () => {
                         <Button
                           variant="destructive"
                           onClick={() => handleDeleteUser(u.id, u.nome)}
-                          className="h-10 rounded-xl"
+                          className="h-9 sm:h-10 rounded-xl text-xs sm:text-sm px-2 sm:px-4"
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Deletar
+                          <Trash2 className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Deletar</span>
                         </Button>
                       </div>
                     </div>
@@ -932,53 +932,53 @@ const Admin = () => {
                 ))}
 
                 {filteredUsers.length === 0 && (
-                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-                    <p className="text-muted-foreground">Nenhum usuário encontrado</p>
+                  <Card className="p-8 sm:p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <p className="text-muted-foreground text-sm">Nenhum usuário encontrado</p>
                   </Card>
                 )}
               </div>
             </TabsContent>
 
             {/* Tab de Metas */}
-            <TabsContent value="metas" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <TabsContent value="metas" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
                   <Target className="h-4 w-4" />
-                  {metas.length} meta(s) cadastrada(s)
+                  {metas.length} meta(s)
                 </p>
                 <Button
                   onClick={() => openMetaDialog()}
-                  className="h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                  className="h-9 sm:h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground text-xs sm:text-sm"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 mr-1 sm:mr-2" />
                   Nova Meta
                 </Button>
               </div>
 
               {/* Lista de Metas dentro da Tab */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {metas.map((meta) => (
-                  <Card key={meta.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <Card key={meta.id} className="p-4 sm:p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
+                    <div className="flex flex-col gap-3 sm:gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Target className="h-5 w-5 text-gold" />
-                          <h3 className="text-lg font-semibold text-foreground">{meta.titulo}</h3>
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+                          <Target className="h-4 w-4 sm:h-5 sm:w-5 text-gold flex-shrink-0" />
+                          <h3 className="text-sm sm:text-lg font-semibold text-foreground">{meta.titulo}</h3>
                           {meta.ativo ? (
-                            <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">Ativa</span>
+                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-green-500/20 text-green-400">Ativa</span>
                           ) : (
-                            <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Inativa</span>
+                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-gray-500/20 text-gray-400">Inativa</span>
                           )}
                           {meta.tipo_meta === 'recorrente' ? (
-                            <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">Contínua</span>
+                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-blue-500/20 text-blue-400">Contínua</span>
                           ) : (
-                            <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Única</span>
+                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-purple-500/20 text-purple-400">Única</span>
                           )}
                         </div>
                         {meta.descricao && (
-                          <p className="text-sm text-muted-foreground mb-2">{meta.descricao}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-2">{meta.descricao}</p>
                         )}
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs sm:text-sm">
                           <p className="text-muted-foreground">
                             <span className="font-medium text-foreground">Tipo:</span> {meta.tipo}
                           </p>
@@ -989,28 +989,28 @@ const Admin = () => {
                             <span className="font-medium text-foreground">Objetivo:</span> {meta.valor_objetivo}
                           </p>
                           <p className="text-gold font-medium">
-                            {meta.pontos_recompensa} pontos
+                            {meta.pontos_recompensa} pts
                           </p>
                         </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex gap-2">
                         <Button
                           variant="outline"
                           onClick={() => openMetaDialog(meta)}
-                          className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                          className="flex-1 sm:flex-none h-9 sm:h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10 text-xs sm:text-sm"
                         >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
+                          <Edit className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Editar</span>
                         </Button>
 
                         <Button
                           variant="destructive"
                           onClick={() => handleDeleteMeta(meta.id, meta.titulo)}
-                          className="h-10 rounded-xl"
+                          className="flex-1 sm:flex-none h-9 sm:h-10 rounded-xl text-xs sm:text-sm"
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Deletar
+                          <Trash2 className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Deletar</span>
                         </Button>
                       </div>
                     </div>
@@ -1018,15 +1018,15 @@ const Admin = () => {
                 ))}
 
                 {metas.length === 0 && (
-                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-                    <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Nenhuma meta cadastrada</p>
+                  <Card className="p-8 sm:p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <Target className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Nenhuma meta cadastrada</p>
                     <Button
                       onClick={() => openMetaDialog()}
-                      className="mt-4 h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                      className="mt-4 h-9 sm:h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground text-xs sm:text-sm"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Criar Primeira Meta
+                      Criar Meta
                     </Button>
                   </Card>
                 )}
@@ -1034,49 +1034,49 @@ const Admin = () => {
             </TabsContent>
 
             {/* Tab de Reuniões */}
-            <TabsContent value="reunioes" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <TabsContent value="reunioes" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
                   <Video className="h-4 w-4" />
-                  {reunioes.length} reunião(ões) cadastrada(s)
+                  {reunioes.length} reunião(ões)
                 </p>
                 <Button
                   onClick={() => openReuniaoDialog()}
-                  className="h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                  className="h-9 sm:h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground text-xs sm:text-sm"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 mr-1 sm:mr-2" />
                   Nova Reunião
                 </Button>
               </div>
 
               {/* Lista de Reuniões dentro da Tab */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {reunioes.map((reuniao) => {
                   const { date, time } = formatDateTime(reuniao.data_hora);
                   const isPast = new Date(reuniao.data_hora) < new Date();
                   const isCanceled = reuniao.status === 'cancelada';
 
                   return (
-                    <Card key={reuniao.id} className={`p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up ${isCanceled ? 'opacity-60' : ''}`}>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <Card key={reuniao.id} className={`p-4 sm:p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up ${isCanceled ? 'opacity-60' : ''}`}>
+                      <div className="flex flex-col gap-3 sm:gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Video className="h-5 w-5 text-gold" />
-                            <h3 className="text-lg font-semibold text-foreground">{reuniao.titulo}</h3>
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+                            <Video className="h-4 w-4 sm:h-5 sm:w-5 text-gold flex-shrink-0" />
+                            <h3 className="text-sm sm:text-lg font-semibold text-foreground">{reuniao.titulo}</h3>
                             {isCanceled ? (
-                              <span className="text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400">Cancelada</span>
+                              <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-red-500/20 text-red-400">Cancelada</span>
                             ) : isPast ? (
-                              <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Encerrada</span>
+                              <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-gray-500/20 text-gray-400">Encerrada</span>
                             ) : (
-                              <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">Agendada</span>
+                              <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-green-500/20 text-green-400">Agendada</span>
                             )}
                           </div>
                           {reuniao.descricao && (
-                            <p className="text-sm text-muted-foreground mb-2">{reuniao.descricao}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-2">{reuniao.descricao}</p>
                           )}
-                          <div className="flex flex-wrap gap-4 text-sm">
+                          <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
                             <p className="text-muted-foreground flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
+                              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                               {date} às {time}
                             </p>
                             {reuniao.link && (
@@ -1086,8 +1086,8 @@ const Admin = () => {
                                 rel="noopener noreferrer"
                                 className="text-gold hover:underline flex items-center gap-1"
                               >
-                                <Link className="h-4 w-4" />
-                                Acessar reunião
+                                <Link className="h-3 w-3 sm:h-4 sm:w-4" />
+                                Acessar
                               </a>
                             )}
                           </div>
@@ -1099,19 +1099,19 @@ const Admin = () => {
                               <Button
                                 variant="outline"
                                 onClick={() => openReuniaoDialog(reuniao)}
-                                className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                                className="flex-1 sm:flex-none h-9 sm:h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10 text-xs sm:text-sm"
                               >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
+                                <Edit className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Editar</span>
                               </Button>
 
                               <Button
                                 variant="outline"
                                 onClick={() => handleCancelReuniao(reuniao.id, reuniao.titulo)}
-                                className="h-10 rounded-xl border-orange-500/30 hover:bg-orange-500/10"
+                                className="flex-1 sm:flex-none h-9 sm:h-10 rounded-xl border-orange-500/30 hover:bg-orange-500/10 text-xs sm:text-sm"
                               >
-                                <X className="h-4 w-4 mr-2" />
-                                Cancelar
+                                <X className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Cancelar</span>
                               </Button>
                             </>
                           )}
@@ -1119,10 +1119,10 @@ const Admin = () => {
                           <Button
                             variant="destructive"
                             onClick={() => handleDeleteReuniao(reuniao.id, reuniao.titulo)}
-                            className="h-10 rounded-xl"
+                            className="flex-1 sm:flex-none h-9 sm:h-10 rounded-xl text-xs sm:text-sm"
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Deletar
+                            <Trash2 className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Deletar</span>
                           </Button>
                         </div>
                       </div>
@@ -1131,15 +1131,15 @@ const Admin = () => {
                 })}
 
                 {reunioes.length === 0 && (
-                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-                    <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Nenhuma reunião cadastrada</p>
+                  <Card className="p-8 sm:p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <Video className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Nenhuma reunião cadastrada</p>
                     <Button
                       onClick={() => openReuniaoDialog()}
-                      className="mt-4 h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                      className="mt-4 h-9 sm:h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground text-xs sm:text-sm"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Agendar Primeira Reunião
+                      Agendar Reunião
                     </Button>
                   </Card>
                 )}
@@ -1147,12 +1147,12 @@ const Admin = () => {
             </TabsContent>
 
             {/* Tab de Ponto */}
-            <TabsContent value="ponto" className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4">
+            <TabsContent value="ponto" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="ponto-search" className="text-foreground flex items-center gap-2 mb-2">
+                  <Label htmlFor="ponto-search" className="text-foreground flex items-center gap-2 mb-2 text-xs sm:text-sm">
                     <Search className="h-4 w-4" />
-                    Buscar por usuário
+                    Buscar
                   </Label>
                   <Input
                     id="ponto-search"
@@ -1160,25 +1160,25 @@ const Admin = () => {
                     placeholder="Nome ou e-mail..."
                     value={pontoSearchTerm}
                     onChange={(e) => setPontoSearchTerm(e.target.value)}
-                    className="h-12 rounded-xl"
+                    className="h-10 sm:h-12 rounded-xl text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="ponto-data" className="text-foreground flex items-center gap-2 mb-2">
+                  <Label htmlFor="ponto-data" className="text-foreground flex items-center gap-2 mb-2 text-xs sm:text-sm">
                     <Calendar className="h-4 w-4" />
-                    Filtrar por data
+                    Data
                   </Label>
                   <Input
                     id="ponto-data"
                     type="date"
                     value={pontoDataFiltro}
                     onChange={(e) => setPontoDataFiltro(e.target.value)}
-                    className="h-12 rounded-xl"
+                    className="h-10 sm:h-12 rounded-xl text-sm"
                   />
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 {registrosPonto.filter(r => {
                   const matchesSearch = !pontoSearchTerm || 
@@ -1187,11 +1187,11 @@ const Admin = () => {
                   const matchesDate = !pontoDataFiltro || 
                     new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
                   return matchesSearch && matchesDate;
-                }).length} registro(s) encontrado(s)
+                }).length} registro(s)
               </p>
 
               {/* Lista de Registros de Ponto dentro da Tab */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {registrosPonto
                   .filter(r => {
                     const matchesSearch = !pontoSearchTerm || 
@@ -1209,42 +1209,42 @@ const Admin = () => {
                     const formatDate = (date: Date) => date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", weekday: "short" });
 
                     return (
-                      <Card key={registro.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <Card key={registro.id} className="p-4 sm:p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
+                        <div className="flex flex-col gap-2 sm:gap-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Clock className="h-5 w-5 text-gold" />
-                              <h3 className="text-lg font-semibold text-foreground">{registro.user_nome}</h3>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-gold flex-shrink-0" />
+                              <h3 className="text-sm sm:text-lg font-semibold text-foreground truncate">{registro.user_nome}</h3>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-2">{registro.user_email}</p>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              <Calendar className="h-4 w-4 inline mr-1" />
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1 truncate">{registro.user_email}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                               {formatDate(entradaDate)}
                             </p>
                             
-                            <div className="flex gap-6">
-                              <div className="flex items-center gap-2">
+                            <div className="flex gap-4 sm:gap-6">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
                                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Entrada</p>
-                                  <p className="text-sm font-semibold text-foreground">{formatTime(entradaDate)}</p>
+                                  <p className="text-[10px] sm:text-xs text-muted-foreground">Entrada</p>
+                                  <p className="text-xs sm:text-sm font-semibold text-foreground">{formatTime(entradaDate)}</p>
                                 </div>
                               </div>
                               
                               {saidaDate ? (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 sm:gap-2">
                                   <div className="w-2 h-2 rounded-full bg-red-500"></div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground">Saída</p>
-                                    <p className="text-sm font-semibold text-foreground">{formatTime(saidaDate)}</p>
+                                    <p className="text-[10px] sm:text-xs text-muted-foreground">Saída</p>
+                                    <p className="text-xs sm:text-sm font-semibold text-foreground">{formatTime(saidaDate)}</p>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2 opacity-50">
+                                <div className="flex items-center gap-1.5 sm:gap-2 opacity-50">
                                   <div className="w-2 h-2 rounded-full bg-gray-400"></div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground">Saída</p>
-                                    <p className="text-sm text-muted-foreground">Não registrada</p>
+                                    <p className="text-[10px] sm:text-xs text-muted-foreground">Saída</p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground">--:--</p>
                                   </div>
                                 </div>
                               )}
@@ -1263,9 +1263,9 @@ const Admin = () => {
                     new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
                   return matchesSearch && matchesDate;
                 }).length === 0 && (
-                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-                    <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Nenhum registro de ponto encontrado</p>
+                  <Card className="p-8 sm:p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <Clock className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Nenhum registro encontrado</p>
                   </Card>
                 )}
               </div>
