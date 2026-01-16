@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog, Video, Link, Calendar, X, Settings, Clock } from "lucide-react";
+import { Loader2, Shield, Trash2, Users, LogOut, Search, Edit, Target, Plus, UserCog, Video, Link, Calendar, X, Settings, Clock, LayoutDashboard } from "lucide-react";
 import Header from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -113,6 +113,9 @@ const Admin = () => {
   const [registrosPonto, setRegistrosPonto] = useState<RegistroPonto[]>([]);
   const [pontoSearchTerm, setPontoSearchTerm] = useState("");
   const [pontoDataFiltro, setPontoDataFiltro] = useState("");
+
+  // Estado para controlar a aba ativa
+  const [activeTab, setActiveTab] = useState("geral");
 
   useEffect(() => {
     checkAdminStatus();
@@ -759,8 +762,12 @@ const Admin = () => {
             </Button>
           </div>
 
-          <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-6 mb-6">
+              <TabsTrigger value="geral" className="rounded-xl">
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Geral
+              </TabsTrigger>
               <TabsTrigger value="users" className="rounded-xl">
                 <Users className="h-4 w-4 mr-2" />
                 Usuários
@@ -782,6 +789,51 @@ const Admin = () => {
                 Config
               </TabsTrigger>
             </TabsList>
+
+            {/* Tab de Visão Geral - Mostra resumo de tudo */}
+            <TabsContent value="geral" className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("users")}>
+                  <div className="flex items-center gap-3">
+                    <Users className="h-8 w-8 text-gold" />
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{users.length}</p>
+                      <p className="text-xs text-muted-foreground">Usuários</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("metas")}>
+                  <div className="flex items-center gap-3">
+                    <Target className="h-8 w-8 text-gold" />
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{metas.length}</p>
+                      <p className="text-xs text-muted-foreground">Metas</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("reunioes")}>
+                  <div className="flex items-center gap-3">
+                    <Video className="h-8 w-8 text-gold" />
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{reunioes.length}</p>
+                      <p className="text-xs text-muted-foreground">Reuniões</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 bg-card/50 border-white/10 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab("ponto")}>
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-8 w-8 text-gold" />
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{registrosPonto.length}</p>
+                      <p className="text-xs text-muted-foreground">Registros</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                Clique em uma seção acima para ver os detalhes, ou selecione uma aba.
+              </p>
+            </TabsContent>
 
             {/* Tab de Usuários */}
             <TabsContent value="users" className="space-y-6">
@@ -806,6 +858,85 @@ const Admin = () => {
                 <Users className="h-4 w-4" />
                 {filteredUsers.length} usuário(s) encontrado(s)
               </p>
+
+              {/* Lista de Usuários dentro da Tab */}
+              <div className="space-y-4">
+                {filteredUsers.map((u) => (
+                  <Card key={u.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-semibold text-foreground">{u.nome}</h3>
+                          {u.is_admin && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-gold/20 text-gold flex items-center gap-1">
+                              <Shield className="h-3 w-3" />
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{u.email}</p>
+                        {u.telefone && (
+                          <p className="text-sm text-muted-foreground">{u.telefone}</p>
+                        )}
+                        <p className="text-sm font-medium text-gold mt-2">
+                          {u.pontos_totais} pontos
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleToggleAdmin(u.id, u.nome, u.is_admin || false)}
+                          className={`h-10 rounded-xl ${u.is_admin ? 'border-orange-500/30 hover:bg-orange-500/10' : 'border-green-500/30 hover:bg-green-500/10'}`}
+                        >
+                          <UserCog className="h-4 w-4 mr-2" />
+                          {u.is_admin ? 'Remover Admin' : 'Tornar Admin'}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => openEditDialog(u)}
+                          className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => handleResetUser(u.id, u.nome)}
+                          disabled={resettingUserId === u.id}
+                          className="h-10 rounded-xl border-gold/30 hover:bg-gold/10"
+                        >
+                          {resettingUserId === u.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Limpar Dados
+                            </>
+                          )}
+                        </Button>
+                        
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDeleteUser(u.id, u.nome)}
+                          className="h-10 rounded-xl"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Deletar
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+
+                {filteredUsers.length === 0 && (
+                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <p className="text-muted-foreground">Nenhum usuário encontrado</p>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
 
             {/* Tab de Metas */}
@@ -823,6 +954,83 @@ const Admin = () => {
                   Nova Meta
                 </Button>
               </div>
+
+              {/* Lista de Metas dentro da Tab */}
+              <div className="space-y-4">
+                {metas.map((meta) => (
+                  <Card key={meta.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="h-5 w-5 text-gold" />
+                          <h3 className="text-lg font-semibold text-foreground">{meta.titulo}</h3>
+                          {meta.ativo ? (
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">Ativa</span>
+                          ) : (
+                            <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Inativa</span>
+                          )}
+                          {meta.tipo_meta === 'recorrente' ? (
+                            <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">Contínua</span>
+                          ) : (
+                            <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Única</span>
+                          )}
+                        </div>
+                        {meta.descricao && (
+                          <p className="text-sm text-muted-foreground mb-2">{meta.descricao}</p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <p className="text-muted-foreground">
+                            <span className="font-medium text-foreground">Tipo:</span> {meta.tipo}
+                          </p>
+                          <p className="text-muted-foreground">
+                            <span className="font-medium text-foreground">Período:</span> {meta.periodo}
+                          </p>
+                          <p className="text-muted-foreground">
+                            <span className="font-medium text-foreground">Objetivo:</span> {meta.valor_objetivo}
+                          </p>
+                          <p className="text-gold font-medium">
+                            {meta.pontos_recompensa} pontos
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => openMetaDialog(meta)}
+                          className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </Button>
+
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDeleteMeta(meta.id, meta.titulo)}
+                          className="h-10 rounded-xl"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Deletar
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+
+                {metas.length === 0 && (
+                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">Nenhuma meta cadastrada</p>
+                    <Button
+                      onClick={() => openMetaDialog()}
+                      className="mt-4 h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Primeira Meta
+                    </Button>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
 
             {/* Tab de Reuniões */}
@@ -839,6 +1047,102 @@ const Admin = () => {
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Reunião
                 </Button>
+              </div>
+
+              {/* Lista de Reuniões dentro da Tab */}
+              <div className="space-y-4">
+                {reunioes.map((reuniao) => {
+                  const { date, time } = formatDateTime(reuniao.data_hora);
+                  const isPast = new Date(reuniao.data_hora) < new Date();
+                  const isCanceled = reuniao.status === 'cancelada';
+
+                  return (
+                    <Card key={reuniao.id} className={`p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up ${isCanceled ? 'opacity-60' : ''}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Video className="h-5 w-5 text-gold" />
+                            <h3 className="text-lg font-semibold text-foreground">{reuniao.titulo}</h3>
+                            {isCanceled ? (
+                              <span className="text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400">Cancelada</span>
+                            ) : isPast ? (
+                              <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Encerrada</span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">Agendada</span>
+                            )}
+                          </div>
+                          {reuniao.descricao && (
+                            <p className="text-sm text-muted-foreground mb-2">{reuniao.descricao}</p>
+                          )}
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            <p className="text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {date} às {time}
+                            </p>
+                            {reuniao.link && (
+                              <a 
+                                href={reuniao.link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-gold hover:underline flex items-center gap-1"
+                              >
+                                <Link className="h-4 w-4" />
+                                Acessar reunião
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {!isCanceled && !isPast && (
+                            <>
+                              <Button
+                                variant="outline"
+                                onClick={() => openReuniaoDialog(reuniao)}
+                                className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                onClick={() => handleCancelReuniao(reuniao.id, reuniao.titulo)}
+                                className="h-10 rounded-xl border-orange-500/30 hover:bg-orange-500/10"
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Cancelar
+                              </Button>
+                            </>
+                          )}
+
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleDeleteReuniao(reuniao.id, reuniao.titulo)}
+                            className="h-10 rounded-xl"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Deletar
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+
+                {reunioes.length === 0 && (
+                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">Nenhuma reunião cadastrada</p>
+                    <Button
+                      onClick={() => openReuniaoDialog()}
+                      className="mt-4 h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agendar Primeira Reunião
+                    </Button>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 
@@ -885,6 +1189,86 @@ const Admin = () => {
                   return matchesSearch && matchesDate;
                 }).length} registro(s) encontrado(s)
               </p>
+
+              {/* Lista de Registros de Ponto dentro da Tab */}
+              <div className="space-y-4">
+                {registrosPonto
+                  .filter(r => {
+                    const matchesSearch = !pontoSearchTerm || 
+                      r.user_nome?.toLowerCase().includes(pontoSearchTerm.toLowerCase()) ||
+                      r.user_email?.toLowerCase().includes(pontoSearchTerm.toLowerCase());
+                    const matchesDate = !pontoDataFiltro || 
+                      new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
+                    return matchesSearch && matchesDate;
+                  })
+                  .map((registro) => {
+                    const entradaDate = new Date(registro.entrada);
+                    const saidaDate = registro.saida ? new Date(registro.saida) : null;
+                    
+                    const formatTime = (date: Date) => date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                    const formatDate = (date: Date) => date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", weekday: "short" });
+
+                    return (
+                      <Card key={registro.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="h-5 w-5 text-gold" />
+                              <h3 className="text-lg font-semibold text-foreground">{registro.user_nome}</h3>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{registro.user_email}</p>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              <Calendar className="h-4 w-4 inline mr-1" />
+                              {formatDate(entradaDate)}
+                            </p>
+                            
+                            <div className="flex gap-6">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Entrada</p>
+                                  <p className="text-sm font-semibold text-foreground">{formatTime(entradaDate)}</p>
+                                </div>
+                              </div>
+                              
+                              {saidaDate ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Saída</p>
+                                    <p className="text-sm font-semibold text-foreground">{formatTime(saidaDate)}</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 opacity-50">
+                                  <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Saída</p>
+                                    <p className="text-sm text-muted-foreground">Não registrada</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+
+                {registrosPonto.filter(r => {
+                  const matchesSearch = !pontoSearchTerm || 
+                    r.user_nome?.toLowerCase().includes(pontoSearchTerm.toLowerCase()) ||
+                    r.user_email?.toLowerCase().includes(pontoSearchTerm.toLowerCase());
+                  const matchesDate = !pontoDataFiltro || 
+                    new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
+                  return matchesSearch && matchesDate;
+                }).length === 0 && (
+                  <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
+                    <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">Nenhum registro de ponto encontrado</p>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
 
             {/* Tab de Configurações */}
@@ -908,336 +1292,7 @@ const Admin = () => {
           </Tabs>
         </Card>
 
-        {/* Lista de Usuários */}
-        <div className="space-y-4">
-          {filteredUsers.map((u) => (
-            <Card key={u.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-semibold text-foreground">{u.nome}</h3>
-                    {u.is_admin && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-gold/20 text-gold flex items-center gap-1">
-                        <Shield className="h-3 w-3" />
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">{u.email}</p>
-                  {u.telefone && (
-                    <p className="text-sm text-muted-foreground">{u.telefone}</p>
-                  )}
-                  <p className="text-sm font-medium text-gold mt-2">
-                    {u.pontos_totais} pontos
-                  </p>
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleToggleAdmin(u.id, u.nome, u.is_admin || false)}
-                    className={`h-10 rounded-xl ${u.is_admin ? 'border-orange-500/30 hover:bg-orange-500/10' : 'border-green-500/30 hover:bg-green-500/10'}`}
-                  >
-                    <UserCog className="h-4 w-4 mr-2" />
-                    {u.is_admin ? 'Remover Admin' : 'Tornar Admin'}
-                  </Button>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => openEditDialog(u)}
-                    className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => handleResetUser(u.id, u.nome)}
-                    disabled={resettingUserId === u.id}
-                    className="h-10 rounded-xl border-gold/30 hover:bg-gold/10"
-                  >
-                    {resettingUserId === u.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Limpar Dados
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleDeleteUser(u.id, u.nome)}
-                    className="h-10 rounded-xl"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Deletar
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-
-          {filteredUsers.length === 0 && (
-            <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-              <p className="text-muted-foreground">Nenhum usuário encontrado</p>
-            </Card>
-          )}
-        </div>
-
-        {/* Lista de Metas */}
-        <div className="space-y-4">
-          {metas.map((meta) => (
-            <Card key={meta.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold text-foreground">{meta.titulo}</h3>
-                    {meta.ativo ? (
-                      <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">Ativa</span>
-                    ) : (
-                      <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Inativa</span>
-                    )}
-                    {meta.tipo_meta === 'recorrente' ? (
-                      <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">Contínua</span>
-                    ) : (
-                      <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Única</span>
-                    )}
-                  </div>
-                  {meta.descricao && (
-                    <p className="text-sm text-muted-foreground mb-2">{meta.descricao}</p>
-                  )}
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <p className="text-muted-foreground">
-                      <span className="font-medium text-foreground">Tipo:</span> {meta.tipo}
-                    </p>
-                    <p className="text-muted-foreground">
-                      <span className="font-medium text-foreground">Período:</span> {meta.periodo}
-                    </p>
-                    <p className="text-muted-foreground">
-                      <span className="font-medium text-foreground">Objetivo:</span> {meta.valor_objetivo}
-                    </p>
-                    <p className="text-gold font-medium">
-                      {meta.pontos_recompensa} pontos
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => openMetaDialog(meta)}
-                    className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleDeleteMeta(meta.id, meta.titulo)}
-                    className="h-10 rounded-xl"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Deletar
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-
-          {metas.length === 0 && (
-            <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-              <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Nenhuma meta cadastrada</p>
-              <Button
-                onClick={() => openMetaDialog()}
-                className="mt-4 h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Primeira Meta
-              </Button>
-            </Card>
-          )}
-        </div>
-
-        {/* Lista de Reuniões */}
-        <div className="space-y-4">
-          {reunioes.map((reuniao) => {
-            const { date, time } = formatDateTime(reuniao.data_hora);
-            const isPast = new Date(reuniao.data_hora) < new Date();
-            const isCanceled = reuniao.status === 'cancelada';
-
-            return (
-              <Card key={reuniao.id} className={`p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up ${isCanceled ? 'opacity-60' : ''}`}>
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Video className="h-5 w-5 text-gold" />
-                      <h3 className="text-lg font-semibold text-foreground">{reuniao.titulo}</h3>
-                      {isCanceled ? (
-                        <span className="text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400">Cancelada</span>
-                      ) : isPast ? (
-                        <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">Encerrada</span>
-                      ) : (
-                        <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">Agendada</span>
-                      )}
-                    </div>
-                    {reuniao.descricao && (
-                      <p className="text-sm text-muted-foreground mb-2">{reuniao.descricao}</p>
-                    )}
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <p className="text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {date} às {time}
-                      </p>
-                      {reuniao.link && (
-                        <a 
-                          href={reuniao.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-gold hover:underline flex items-center gap-1"
-                        >
-                          <Link className="h-4 w-4" />
-                          Acessar reunião
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {!isCanceled && !isPast && (
-                      <>
-                        <Button
-                          variant="outline"
-                          onClick={() => openReuniaoDialog(reuniao)}
-                          className="h-10 rounded-xl border-blue-500/30 hover:bg-blue-500/10"
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          onClick={() => handleCancelReuniao(reuniao.id, reuniao.titulo)}
-                          className="h-10 rounded-xl border-orange-500/30 hover:bg-orange-500/10"
-                        >
-                          <X className="h-4 w-4 mr-2" />
-                          Cancelar
-                        </Button>
-                      </>
-                    )}
-
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleDeleteReuniao(reuniao.id, reuniao.titulo)}
-                      className="h-10 rounded-xl"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Deletar
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-
-          {reunioes.length === 0 && (
-            <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-              <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Nenhuma reunião cadastrada</p>
-              <Button
-                onClick={() => openReuniaoDialog()}
-                className="mt-4 h-10 rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Agendar Primeira Reunião
-              </Button>
-            </Card>
-          )}
-        </div>
-
-        {/* Lista de Registros de Ponto */}
-        <div className="space-y-4">
-          {registrosPonto
-            .filter(r => {
-              const matchesSearch = !pontoSearchTerm || 
-                r.user_nome?.toLowerCase().includes(pontoSearchTerm.toLowerCase()) ||
-                r.user_email?.toLowerCase().includes(pontoSearchTerm.toLowerCase());
-              const matchesDate = !pontoDataFiltro || 
-                new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
-              return matchesSearch && matchesDate;
-            })
-            .map((registro) => {
-              const entradaDate = new Date(registro.entrada);
-              const saidaDate = registro.saida ? new Date(registro.saida) : null;
-              
-              const formatTime = (date: Date) => date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-              const formatDate = (date: Date) => date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", weekday: "short" });
-
-              return (
-                <Card key={registro.id} className="p-6 bg-card/95 backdrop-blur border-white/10 animate-slide-up">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Clock className="h-5 w-5 text-gold" />
-                        <h3 className="text-lg font-semibold text-foreground">{registro.user_nome}</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">{registro.user_email}</p>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        <Calendar className="h-4 w-4 inline mr-1" />
-                        {formatDate(entradaDate)}
-                      </p>
-                      
-                      <div className="flex gap-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Entrada</p>
-                            <p className="text-sm font-semibold text-foreground">{formatTime(entradaDate)}</p>
-                          </div>
-                        </div>
-                        
-                        {saidaDate ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Saída</p>
-                              <p className="text-sm font-semibold text-foreground">{formatTime(saidaDate)}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 opacity-50">
-                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Saída</p>
-                              <p className="text-sm text-muted-foreground">Não registrada</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-
-          {registrosPonto.filter(r => {
-            const matchesSearch = !pontoSearchTerm || 
-              r.user_nome?.toLowerCase().includes(pontoSearchTerm.toLowerCase()) ||
-              r.user_email?.toLowerCase().includes(pontoSearchTerm.toLowerCase());
-            const matchesDate = !pontoDataFiltro || 
-              new Date(r.entrada).toISOString().split('T')[0] === pontoDataFiltro;
-            return matchesSearch && matchesDate;
-          }).length === 0 && (
-            <Card className="p-12 bg-card/95 backdrop-blur border-white/10 text-center">
-              <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Nenhum registro de ponto encontrado</p>
-            </Card>
-          )}
-        </div>
 
         {/* Dialog de Edição de Usuário */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
