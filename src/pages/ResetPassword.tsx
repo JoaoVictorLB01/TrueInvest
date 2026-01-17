@@ -22,37 +22,56 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isValidSession, setIsValidSession] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const navigate = useNavigate();
   const { settings: loginSettings, loading: settingsLoading } = useLoginSettings();
 
   useEffect(() => {
-    // Check if user has a valid recovery session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // User should have a session from the recovery link
-      if (session) {
-        setIsValidSession(true);
-      }
-      setCheckingSession(false);
-    };
-
-    // Listen for auth state changes (when user clicks recovery link)
+    // Listen for the PASSWORD_RECOVERY event from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth event:", event);
+        
         if (event === "PASSWORD_RECOVERY") {
-          setIsValidSession(true);
-          setCheckingSession(false);
+          // User clicked the recovery link - they can now set a new password
+          setReady(true);
+          setError(null);
+        } else if (event === "SIGNED_IN" && !ready && !success) {
+          // If user is already signed in normally, redirect to dashboard
+          // But only if we haven't processed a PASSWORD_RECOVERY event
         }
       }
     );
 
-    checkSession();
+    // Check URL hash for recovery token (Supabase sends tokens via hash)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+    
+    if (accessToken && type === 'recovery') {
+      // Token is present in URL, Supabase will process it via onAuthStateChange
+      // Just wait for the PASSWORD_RECOVERY event
+      console.log("Recovery token found in URL");
+    } else {
+      // No token in URL - check if we already have a recovery session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          // User has a valid session, allow password reset
+          setReady(true);
+        } else {
+          // No session and no token - show error after a brief delay
+          setTimeout(() => {
+            if (!ready) {
+              setError("Link inválido ou expirado");
+            }
+          }, 2000);
+        }
+      });
+    }
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [ready, success]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,15 +84,19 @@ const ResetPassword = () => {
 
     setLoading(true);
     
-    const { error } = await supabase.auth.updateUser({
+    const { error: updateError } = await supabase.auth.updateUser({
       password: password,
     });
 
     setLoading(false);
 
-    if (error) {
-      console.error("Password reset error:", error);
-      toast.error("Erro ao redefinir senha. Tente novamente.");
+    if (updateError) {
+      console.error("Password reset error:", updateError);
+      if (updateError.message.includes("same as")) {
+        toast.error("A nova senha deve ser diferente da senha atual");
+      } else {
+        toast.error("Erro ao redefinir senha. Tente novamente.");
+      }
       return;
     }
 
@@ -89,7 +112,7 @@ const ResetPassword = () => {
     }, 3000);
   };
 
-  if (settingsLoading || checkingSession) {
+  if (settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-primary">
         <Loader2 className="h-8 w-8 animate-spin text-gold" />
@@ -99,8 +122,8 @@ const ResetPassword = () => {
 
   const hasBackground = loginSettings.login_background_type !== 'none' && loginSettings.login_background_url;
 
-  // If no valid session, show error
-  if (!isValidSession && !checkingSession) {
+  // Show error state if link is invalid
+  if (error && !ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4 relative overflow-hidden">
         {hasBackground && (
@@ -146,7 +169,7 @@ const ResetPassword = () => {
           <div className="bg-card rounded-3xl p-8 shadow-xl animate-scale-in text-center">
             <h2 className="text-xl font-semibold text-foreground mb-4">Link Inválido ou Expirado</h2>
             <p className="text-muted-foreground mb-6">
-              Este link de recuperação de senha é inválido ou já expirou. Solicite um novo link.
+              Este link de recuperação de senha é inválido ou já expirou. Solicite um novo link na tela de login.
             </p>
             <Button 
               onClick={() => navigate("/login")}
@@ -156,6 +179,18 @@ const ResetPassword = () => {
               Voltar para o Login
             </Button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while waiting for auth state
+  if (!ready && !error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-primary">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gold mx-auto mb-4" />
+          <p className="text-white/80">Validando link de recuperação...</p>
         </div>
       </div>
     );
@@ -238,6 +273,7 @@ const ResetPassword = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-12 rounded-xl"
                   disabled={loading}
+                  autoFocus
                 />
               </div>
 
@@ -267,6 +303,17 @@ const ResetPassword = () => {
                 ) : (
                   "Redefinir Senha"
                 )}
+              </Button>
+
+              <Button 
+                type="button"
+                variant="ghost"
+                onClick={() => navigate("/login")}
+                className="w-full h-10 rounded-xl text-sm transition-smooth opacity-0-animate animate-fade-in delay-300"
+                disabled={loading}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar para o Login
               </Button>
             </form>
           )}
