@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginSettings } from "@/hooks/useLoginSettings";
 import { z } from "zod";
+import ForgotPasswordDialog from "@/components/ForgotPasswordDialog";
 
 const loginSchema = z.object({
   email: z.string().trim().email("E-mail inválido"),
@@ -288,6 +289,17 @@ const Login = () => {
                   className="h-12 rounded-xl"
                   disabled={loading}
                 />
+                <div className="text-right">
+                  <ForgotPasswordDialog>
+                    <button
+                      type="button"
+                      className="text-sm text-gold hover:text-gold/80 transition-colors font-medium"
+                      disabled={loading}
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </ForgotPasswordDialog>
+                </div>
               </div>
 
               <Button 
