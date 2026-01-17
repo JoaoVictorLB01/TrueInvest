@@ -12,6 +12,7 @@ import Ranking from "./pages/Ranking";
 import Metas from "./pages/Metas";
 import Perfil from "./pages/Perfil";
 import Admin from "./pages/Admin";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/metas" element={<Metas />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
